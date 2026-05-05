@@ -1,26 +1,141 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
+  --font-display: var(--font-bricolage);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-ink: var(--ink);
+  --color-cream: var(--cream);
+  --color-coral: var(--coral);
+  --color-marigold: var(--marigold);
+  --color-sea: var(--sea);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.85);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --animate-marquee: marquee 30s linear infinite;
+  --animate-blob: blob 14s ease-in-out infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes blob {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    33%      { transform: translate(20px,-30px) scale(1.05); }
+    66%      { transform: translate(-25px,15px) scale(0.97); }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---------------- Light (default) ---------------- */
+:root {
+  /* navy/blue brand palette — derived from RareOcto logo */
+  --ink:      oklch(0.11 0.09 255);   /* deep navy — maximum contrast text / headings */
+  --cream:    oklch(0.97 0.018 85);   /* warm off-white — background */
+  --coral:    oklch(0.44 0.24 250);   /* bold brand blue — primary CTA / accents */
+  --marigold: oklch(0.60 0.20 230);   /* saturated steel blue — gradient shimmer / secondary */
+  --sea:      oklch(0.27 0.19 255);   /* rich deep navy — tertiary / illustrations */
+
+  --background: var(--cream);
+  --foreground: var(--ink);
+
+  --card: oklch(0.99 0.008 240);
+  --card-foreground: var(--ink);
+  --popover: oklch(0.99 0.008 240);
+  --popover-foreground: var(--ink);
+
+  --primary: var(--coral);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: var(--marigold);
+  --secondary-foreground: oklch(0.99 0.005 85);
+
+  --muted: oklch(0.89 0.022 240);
+  --muted-foreground: oklch(0.36 0.07 255);
+  --accent: var(--marigold);
+  --accent-foreground: oklch(0.99 0.005 85);
+
+  --destructive: oklch(0.52 0.25 27);
+  --border: oklch(0.78 0.03 240);
+  --input: oklch(0.87 0.022 240);
+  --ring: var(--coral);
+
+  --radius: 0.75rem;
+
+  color-scheme: light;
 }
+
+/* ---------------- Dark (class-based) ---------------- */
+.dark {
+  --ink:      oklch(0.14 0.065 255);  /* deep navy — dark background */
+  --cream:    oklch(0.93 0.01 255);   /* near-white — text on dark */
+  --coral:    oklch(0.62 0.18 250);   /* brighter brand blue — pops on dark bg */
+  --marigold: oklch(0.77 0.12 230);   /* lighter steel blue */
+  --sea:      oklch(0.47 0.15 255);   /* mid navy */
+
+  --background: var(--ink);
+  --foreground: var(--cream);
+
+  --card: oklch(0.21 0.065 255);
+  --card-foreground: var(--cream);
+  --popover: oklch(0.21 0.065 255);
+  --popover-foreground: var(--cream);
+
+  --primary: var(--coral);
+  --primary-foreground: oklch(0.12 0.05 255);
+  --secondary: oklch(0.27 0.07 255);
+  --secondary-foreground: var(--cream);
+
+  --muted: oklch(0.23 0.055 255);
+  --muted-foreground: oklch(0.70 0.02 240);
+  --accent: var(--marigold);
+  --accent-foreground: oklch(0.12 0.05 255);
+
+  --destructive: oklch(0.7 0.19 22);
+  --border: oklch(1 0 0 / 0.12);
+  --input: oklch(1 0 0 / 0.16);
+  --ring: var(--coral);
+
+  color-scheme: dark;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/40; }
+  html { @apply font-sans antialiased; }
+  body { @apply bg-background text-foreground; }
+  ::selection { background: var(--coral); color: var(--primary-foreground); }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "ss01", "ss02";
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility text-balance { text-wrap: balance; }
+@utility text-pretty  { text-wrap: pretty; }
