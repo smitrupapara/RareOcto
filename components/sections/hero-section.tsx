@@ -13,6 +13,7 @@ const HERO_WORDS = ["Stick.", "Peel.", "Repeat."];
 export function HeroSection() {
   const rootRef = useRef<HTMLElement | null>(null);
   const orbitRef = useRef<HTMLDivElement | null>(null);
+  const logoRef = useRef<HTMLDivElement | null>(null);
   const blobRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -42,6 +43,11 @@ export function HeroSection() {
           orbitRef.current,
           { scale: 0.7, opacity: 0, rotate: -25, duration: 1.1, ease: "back.out(1.6)" },
           "-=0.95",
+        )
+        .from(
+          logoRef.current,
+          { scale: 0.4, opacity: 0, duration: 0.85, ease: "back.out(2)" },
+          "<0.15",
         );
 
       gsap.to(orbitRef.current, {
@@ -173,31 +179,35 @@ export function HeroSection() {
         </div>
 
         <div className="relative flex items-center justify-center lg:justify-end">
-          <div
-            ref={orbitRef}
-            className="relative aspect-square w-full max-w-[460px] will-change-transform"
-          >
-            <div className="absolute inset-0 rounded-full border border-dashed border-foreground/15" />
-            <div className="absolute inset-6 rounded-full border border-dashed border-foreground/10" />
-            <div className="absolute inset-14 rounded-full bg-gradient-to-br from-coral/30 via-marigold/20 to-sea/30 blur-2xl" />
+          <div className="relative aspect-square w-full max-w-[460px]">
+            {/* Rotating orbit — rings + floating labels only */}
+            <div
+              ref={orbitRef}
+              className="absolute inset-0 will-change-transform"
+            >
+              <div className="absolute inset-0 rounded-full border border-dashed border-foreground/15" />
+              <div className="absolute inset-6 rounded-full border border-dashed border-foreground/10" />
+              <div className="absolute inset-14 rounded-full bg-gradient-to-br from-coral/30 via-marigold/20 to-sea/30 blur-2xl" />
 
-            <div className="absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2 place-items-center">
-              <Logo className="h-44 w-44 drop-shadow-[0_18px_40px_rgba(255,90,55,0.35)] sm:h-56 sm:w-56" />
+              {[
+                { label: "peel", angle: 12 },
+                { label: "stick", angle: 132 },
+                { label: "repeat", angle: 252 },
+              ].map(({ label, angle }) => (
+                <span
+                  key={label}
+                  style={{ transform: `rotate(${angle}deg) translate(0, -210px) rotate(-${angle}deg)` }}
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/15 bg-background/70 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/70 backdrop-blur"
+                >
+                  {label}
+                </span>
+              ))}
             </div>
 
-            {[
-              { label: "peel", angle: 12 },
-              { label: "stick", angle: 132 },
-              { label: "repeat", angle: 252 },
-            ].map(({ label, angle }) => (
-              <span
-                key={label}
-                style={{ transform: `rotate(${angle}deg) translate(0, -210px) rotate(-${angle}deg)` }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/15 bg-background/70 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.32em] text-foreground/70 backdrop-blur"
-              >
-                {label}
-              </span>
-            ))}
+            {/* Static logo — sits above the orbit, never rotates */}
+            <div ref={logoRef} className="absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2 place-items-center">
+              <Logo className="h-44 w-44 drop-shadow-[0_18px_40px_rgba(255,90,55,0.35)] sm:h-56 sm:w-56" />
+            </div>
           </div>
         </div>
       </div>
