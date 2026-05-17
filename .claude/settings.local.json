@@ -15,7 +15,15 @@
       "Bash(node -e \"const t = require\\('tailwindcss'\\); console.log\\(typeof t, typeof t.postcss\\)\")",
       "Bash(node *)",
       "Bash(claude doctor *)",
-      "PowerShell(claude doctor *)"
+      "PowerShell(claude doctor *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\rupap\\\\Projects\\\\RareOcto\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(npx supabase *)",
+      "Bash(cat)",
+      "Bash(node_modules/.bin/tsc --noEmit --strict /tmp/type-test.ts)",
+      "Bash(node_modules/.bin/tsc --noEmit --strict /tmp/type-test3.ts)",
+      "PowerShell(head *)",
+      "Bash(xargs grep *)"
     ]
   },
   "enableAllProjectMcpServers": true,

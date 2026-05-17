@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Menu, Moon, Sun } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { ChevronDown, Menu, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetClose,
@@ -15,18 +23,21 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Logo } from "./logo";
+import { signOut } from "@/lib/auth-actions";
 import type { NavLink } from "@/types";
+import type { Profile } from "@/types/database";
 
 const NAV_LINKS: NavLink[] = [
   { href: "/catalog", label: "Catalog" },
 ];
 
-export function SiteNav() {
+export function SiteNav({ profile }: { profile?: Profile | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   function scrollToAbout() {
     if (pathname === "/") {
@@ -119,6 +130,34 @@ export function SiteNav() {
             {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
           </Button>
 
+          {profile ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="hidden md:flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent/40 hover:text-foreground">
+                {profile.name}
+                <ChevronDown className="size-3.5 opacity-60" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[180px]">
+                <DropdownMenuLabel>{profile.phone}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push("/account")}>
+                  Account
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={isPending}
+                  onClick={() => startTransition(() => signOut())}
+                >
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button asChild variant="ghost" size="sm" className="hidden md:flex rounded-full">
+              <Link href="/login">Login</Link>
+            </Button>
+          )}
+
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button
@@ -155,6 +194,26 @@ export function SiteNav() {
                     About
                   </button>
                 </SheetClose>
+                <div className="mt-4 border-t pt-4">
+                  {profile ? (
+                    <button
+                      onClick={() => startTransition(() => signOut())}
+                      disabled={isPending}
+                      className="w-full rounded-xl px-3 py-3 text-left text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+                    >
+                      Sign out
+                    </button>
+                  ) : (
+                    <SheetClose asChild>
+                      <Link
+                        href="/login"
+                        className="block rounded-xl px-3 py-3 transition-colors hover:bg-accent/40"
+                      >
+                        Login
+                      </Link>
+                    </SheetClose>
+                  )}
+                </div>
               </nav>
             </SheetContent>
           </Sheet>

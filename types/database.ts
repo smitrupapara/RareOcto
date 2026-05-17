@@ -15,16 +15,16 @@ export type OrderStatus =
   | "refunded";
 export type Role = "user" | "admin";
 
-export interface Profile {
+export type Profile = {
   id: string;
   phone: string | null;
   email: string | null;
   name: string | null;
   role: Role;
   created_at: string;
-}
+};
 
-export interface Product {
+export type Product = {
   id: string;
   slug: string;
   name: string;
@@ -35,26 +35,26 @@ export interface Product {
   available_sizes: ProductSize[];
   stock: number;
   created_at: string;
-}
+};
 
-export interface SavedPreview {
+export type SavedPreview = {
   id: string;
   user_id: string;
   product_id: string;
   wall_image_url: string;
   composited_image_url: string;
   created_at: string;
-}
+};
 
-export interface CartItem {
+export type CartItem = {
   id: string;
   user_id: string;
   product_id: string;
   size: ProductSize;
   quantity: number;
-}
+};
 
-export interface Address {
+export type Address = {
   name: string;
   line1: string;
   line2?: string;
@@ -63,18 +63,18 @@ export interface Address {
   postal_code: string;
   country: string;
   phone: string;
-}
+};
 
-export interface OrderLineItem {
+export type OrderLineItem = {
   product_id: string;
   slug: string;
   name: string;
   size: ProductSize;
   unit_price: number;
   quantity: number;
-}
+};
 
-export interface Order {
+export type Order = {
   id: string;
   user_id: string;
   items: OrderLineItem[];
@@ -84,20 +84,20 @@ export interface Order {
   razorpay_order_id: string | null;
   razorpay_payment_id: string | null;
   created_at: string;
-}
+};
 
 /* --- Supabase generated-style envelope so the client typings work --- */
 export type Database = {
   public: {
     Tables: {
-      profiles: { Row: Profile; Insert: Partial<Profile> & Pick<Profile, "id">; Update: Partial<Profile> };
-      products: { Row: Product; Insert: Omit<Product, "id" | "created_at"> & { id?: string }; Update: Partial<Product> };
-      saved_previews: { Row: SavedPreview; Insert: Omit<SavedPreview, "id" | "created_at"> & { id?: string }; Update: Partial<SavedPreview> };
-      cart_items: { Row: CartItem; Insert: Omit<CartItem, "id"> & { id?: string }; Update: Partial<CartItem> };
-      orders: { Row: Order; Insert: Omit<Order, "id" | "created_at"> & { id?: string }; Update: Partial<Order> };
+      profiles: { Row: Profile; Insert: Partial<Profile> & Pick<Profile, "id">; Update: Partial<Profile>; Relationships: [] };
+      products: { Row: Product; Insert: Omit<Product, "id" | "created_at"> & { id?: string }; Update: Partial<Product>; Relationships: [] };
+      saved_previews: { Row: SavedPreview; Insert: Omit<SavedPreview, "id" | "created_at"> & { id?: string }; Update: Partial<SavedPreview>; Relationships: [] };
+      cart_items: { Row: CartItem; Insert: Omit<CartItem, "id"> & { id?: string }; Update: Partial<CartItem>; Relationships: [] };
+      orders: { Row: Order; Insert: Omit<Order, "id" | "created_at"> & { id?: string }; Update: Partial<Order>; Relationships: [] };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
     Enums: {
       product_size: ProductSize;
       category: Category;

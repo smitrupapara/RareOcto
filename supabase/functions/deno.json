@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "https://esm.sh/standardwebhooks@1.0.0": "https://esm.sh/standardwebhooks@1.0.0"
+  }
+}
