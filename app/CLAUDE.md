@@ -17,9 +17,9 @@
 - Color palette: navy/blue brand theme — `--ink` (navy), `--cream` (off-white), `--coral` (brand blue CTA), `--marigold` (steel-sky blue), `--sea` (deep navy)
 
 ## (public)/layout.tsx
-- Wraps all public pages: `/`, `/catalog`, `/try-on`, `/about`
-- Structure: `flex min-h-screen flex-col` → `<SiteNav />` → `<main flex-1>` → `<SiteFooter />`
-- Server component (no "use client")
+- Wraps all public pages: `/`, `/catalog`, `/catalog/[slug]`, `/cart`, `/account/favorites`, `/try-on`, `/about`
+- Structure: `flex min-h-screen flex-col` → `<SiteNav cartCount={…} />` → `<main flex-1>` → `<SiteFooter />`
+- Server component (no "use client"). Fetches `getCurrentProfile` + `getCurrentUser` in parallel, then `getCartCount(user.id)` if authed; passes cart count to `<SiteNav>` for the cart badge.
 
 ## (public)/page.tsx — Home (`/`)
 - Renders `<HeroSection />` then `<HowItWorks />`
@@ -27,9 +27,39 @@
 - Metadata: title "RareOcto — Stick. Peel. Repeat."
 
 ## (public)/catalog/page.tsx — Catalog (`/catalog`)
-- Placeholder — no products yet (blocked on Supabase env vars)
-- Shows Logo + "The catalog." headline + "Something rare is dropping soon." + back-home button
-- Static prerender
+- Server component; `searchParams: Promise<...>` (Next 16) parsed via `parseCatalogFilters` (`lib/catalog/search.ts`)
+- Data via `listProducts(filters)` (`lib/catalog/queries.ts`) — returns `{ products, total, page, pageSize, pageCount }`
+- Also fetches the current user (parallel) and, if authed, resolves `favoriteIds` via `getFavoritesForUser` so the grid hearts render in their saved state
+- Layout: header (eyebrow + h1 + tagline) → search + result count row → filter row → grid → pagination
+- Renders `<EmptyState />` instead of grid+pagination when `products.length === 0` (deep-links to `/catalog` to clear)
+- Children: `CatalogSearch` (client, debounced 280ms, `router.replace`), `CatalogFilters` (client, URL-syncing selects + Clear all), `ProductGrid` (server, takes `isAuthed` + `favoriteIds`), `CatalogPagination` (server, builds hrefs via `filtersToSearchString`)
+- Search/filter components are wrapped in `<Suspense>` because they call `useSearchParams()` — required for static prerender
+
+## (public)/catalog/[slug]/page.tsx — Product detail
+- Server component; `params: Promise<{ slug }>` (Next 16); 404s via `notFound()` when slug missing
+- `generateMetadata` returns title/description/canonical/OpenGraph/Twitter from product fields; OG image is `og(product.images[0])`
+- Sections in order: `Breadcrumbs` → gallery + `ProductBuyBox` + `FavoriteToggle` (showLabel) → About + `DimensionsTable` → `#reviews` (`ReviewSummary` size="lg" + `ReviewList` + `ReviewForm`) → `RelatedProducts` → `ProductJsonLd`
+- Aggregate + current user fetched in parallel; `isFavorite` resolved separately if user present
+- Server actions live at `app/(public)/catalog/[slug]/actions.ts`: `addToCartAction`, `toggleFavoriteAction`, `submitReviewAction` (all `requireUser()`-gated; duplicate review caught via Postgres code `23505`)
+
+## (public)/cart/page.tsx — Cart
+- Server component; protected via `middleware.ts` `PROTECTED` array
+- Reads `getCartForUser(user.id)` for lines + subtotal; renders empty state or list of `CartLineItem`s + summary
+- Actions in `actions.ts`: `updateCartQuantity`, `removeFromCart`, `clearCart`; revalidate `/cart`
+
+## (public)/account/favorites/page.tsx — Saved pieces
+- Server component; `requireUser()`; reads `getFavoritesForUser`
+- Empty state nudges to `/catalog`; non-empty renders `ProductGrid` with `isAuthed` + all product IDs marked as favorite
+- `metadata.robots: { index: false, follow: false }` — private page, kept out of crawlers
+
+## sitemap.ts (`/sitemap.xml`)
+- Emits `/`, `/catalog`, `/try-on`, `/about` + every `/catalog/<slug>` from `listAllProductSlugs()`
+- Per-product `lastModified` comes from `created_at`; falls back to static-only if DB call throws (build-time safety)
+- Site URL: `NEXT_PUBLIC_SITE_URL` → fallback `https://rareocto.com`
+
+## robots.ts (`/robots.txt`)
+- Allow all `*`; disallow `/api/`, `/account/`, `/cart`, `/admin/`, `/login`
+- Points to `${SITE_URL}/sitemap.xml`
 
 ## not-found.tsx
 - On-brand 404: "This page peeled off." / "404 — wall not found"
@@ -42,3 +72,20 @@
 ## loading.tsx
 - Animated loading state: pulsing dot + gradient "loading…" text using marquee animation
 - No "use client" needed (server component)
+
+## admin/* — Admin product CRUD
+- Role-gated at two layers: `middleware.ts` (`ADMIN_ONLY = ["/admin"]` → redirect to `/` for non-admins) and `app/admin/layout.tsx` (re-checks via `getCurrentProfile()`)
+- `admin/layout.tsx` — shared shell with header (RareOcto admin + nav to Products + View site); `robots: { index: false, follow: false }`
+- `admin/page.tsx` — one-liner `redirect("/admin/products")`
+- `admin/products/page.tsx` — list (server component, `force-dynamic`); shows image thumb, name+slug, category badge, price (`formatPaiseToINR`), stock with color coding (red if 0, marigold if <5), Edit link per row; empty state CTA
+- `admin/products/new/page.tsx` — wraps `<ProductForm mode="create" />`
+- `admin/products/[id]/edit/page.tsx` — fetches product by id (404 on bad UUID or missing); `<ProductForm mode="edit" initial={product} productId={id} />`; includes "View on site ↗" link
+- `admin/products/actions.ts` — server actions, all gated by `requireAdmin()`:
+  - `createProductAction(input)` — zod-parsed insert; catches Postgres 23505 (slug collision) → friendly field error
+  - `updateProductAction(id, input)` — fetches existing slug first to revalidate old `/catalog/<old-slug>` if changed
+  - `deleteProductAction(id)` — invalidates `/catalog/<slug>` + list pages
+  - `reorderProductImagesAction(id, images)` — lightweight image-array update
+- All actions revalidate `/catalog`, `/catalog/<slug>`, and `/admin/products`
+- Cloudinary uploads use `<CldUploadWidget>` (next-cloudinary) with preset from `NEXT_PUBLIC_CLOUDINARY_ADMIN_UPLOAD_PRESET`
+- Form component: `components/admin/product-form.tsx` (RHF + zod, mirrors `productSchema` from actions.ts)
+- Image uploader: `components/admin/image-uploader.tsx` (thumb strip with move-up/down + remove; cover = index 0)

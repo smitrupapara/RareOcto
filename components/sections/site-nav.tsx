@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { ChevronDown, Menu, Moon, Sun } from "lucide-react";
+import { ChevronDown, Menu, Moon, ShoppingBag, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -31,7 +32,13 @@ const NAV_LINKS: NavLink[] = [
   { href: "/catalog", label: "Catalog" },
 ];
 
-export function SiteNav({ profile }: { profile?: Profile | null }) {
+export function SiteNav({
+  profile,
+  cartCount = 0,
+}: {
+  profile?: Profile | null;
+  cartCount?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
@@ -111,6 +118,23 @@ export function SiteNav({ profile }: { profile?: Profile | null }) {
 
         <div className="flex items-center gap-1 sm:gap-2">
           <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            aria-label={cartCount > 0 ? `Cart (${cartCount} items)` : "Cart"}
+            className="relative rounded-full"
+          >
+            <Link href="/cart">
+              <ShoppingBag className="size-5" />
+              {cartCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--coral)] px-1 text-[10px] font-semibold leading-none text-white">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              ) : null}
+            </Link>
+          </Button>
+
+          <Button
             variant="ghost"
             size="icon"
             aria-label="Toggle theme"
@@ -137,7 +161,9 @@ export function SiteNav({ profile }: { profile?: Profile | null }) {
                 <ChevronDown className="size-3.5 opacity-60" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[180px]">
-                <DropdownMenuLabel>{profile.phone}</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>{profile.phone}</DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push("/account")}>
                   Account

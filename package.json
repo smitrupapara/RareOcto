@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "tsx scripts/seed-products.ts",
+    "upload:images": "tsx scripts/upload-cloudinary.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

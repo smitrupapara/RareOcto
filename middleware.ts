@@ -3,8 +3,9 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
 import { safeNext } from "@/lib/auth";
 
-const PROTECTED = ["/account", "/onboarding", "/try-on"];
+const PROTECTED = ["/account", "/onboarding", "/try-on", "/cart", "/admin"];
 const AUTH_ONLY = ["/login"];
+const ADMIN_ONLY = ["/admin"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -33,10 +34,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && !pathname.startsWith("/onboarding") && !pathname.startsWith("/auth")) {
+    const needsAdminCheck = ADMIN_ONLY.some(p => pathname.startsWith(p));
     const { data: profile } = await supabase
-      .from("profiles").select("name").eq("id", user.id).maybeSingle();
+      .from("profiles").select("name, role").eq("id", user.id).maybeSingle();
     if (profile && profile.name === null) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+    if (needsAdminCheck && profile?.role !== "admin") {
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 

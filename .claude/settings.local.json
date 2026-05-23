@@ -23,7 +23,10 @@
       "Bash(node_modules/.bin/tsc --noEmit --strict /tmp/type-test.ts)",
       "Bash(node_modules/.bin/tsc --noEmit --strict /tmp/type-test3.ts)",
       "PowerShell(head *)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\rupap\\\\Projects\\\\RareOcto\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(dir componentscatalog *)"
     ]
   },
   "enableAllProjectMcpServers": true,

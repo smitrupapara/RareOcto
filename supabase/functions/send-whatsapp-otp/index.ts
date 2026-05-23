@@ -51,9 +51,13 @@ Deno.serve(async (req) => {
     }
   );
 
+  const resBody = await res.text();
+  console.log("MSG91 response status:", res.status);
+  console.log("MSG91 response body:", resBody);
+
   if (!res.ok) {
     return new Response(
-      JSON.stringify({ error: { http_code: 500, message: await res.text() } }),
+      JSON.stringify({ error: { http_code: 500, message: resBody } }),
       { status: 500, headers: { "content-type": "application/json" } }
     );
   }
