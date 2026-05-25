@@ -19,7 +19,7 @@ export function ProductGallery({ images, alt, className }: ProductGalleryProps) 
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <div className="relative aspect-square w-full overflow-hidden rounded-3xl border border-border bg-muted">
+      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-3xl border border-border bg-muted">
         {current ? (
           <Image
             loader={cloudinaryLoader}

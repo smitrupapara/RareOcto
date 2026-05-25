@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -41,7 +43,7 @@ export function ProductCard({
       )}
     >
       <Link href={`/catalog/${product.slug}`} className="flex flex-1 flex-col">
-        <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
+        <div className="relative aspect-[3/2] w-full overflow-hidden bg-muted">
           {cover ? (
             <Image
               loader={cloudinaryLoader}

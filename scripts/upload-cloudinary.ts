@@ -24,7 +24,24 @@
  */
 
 import { readdir, stat } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { resolve, basename, extname, join } from "node:path";
+
+// Load .env.local when running standalone outside Next.js
+try {
+  const raw = readFileSync(".env.local", "utf8");
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+    if (!(key in process.env)) process.env[key] = val;
+  }
+} catch {
+  // .env.local not present — env vars must be set externally
+}
 
 // `cloudinary` is intentionally not imported at the top so this file still
 // type-checks without the dep installed. Require lazily in main().
