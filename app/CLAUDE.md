@@ -73,19 +73,5 @@
 - Animated loading state: pulsing dot + gradient "loading…" text using marquee animation
 - No "use client" needed (server component)
 
-## admin/* — Admin product CRUD
-- Role-gated at two layers: `middleware.ts` (`ADMIN_ONLY = ["/admin"]` → redirect to `/` for non-admins) and `app/admin/layout.tsx` (re-checks via `getCurrentProfile()`)
-- `admin/layout.tsx` — shared shell with header (RareOcto admin + nav to Products + View site); `robots: { index: false, follow: false }`
-- `admin/page.tsx` — one-liner `redirect("/admin/products")`
-- `admin/products/page.tsx` — list (server component, `force-dynamic`); shows image thumb, name+slug, category badge, price (`formatPaiseToINR`), stock with color coding (red if 0, marigold if <5), Edit link per row; empty state CTA
-- `admin/products/new/page.tsx` — wraps `<ProductForm mode="create" />`
-- `admin/products/[id]/edit/page.tsx` — fetches product by id (404 on bad UUID or missing); `<ProductForm mode="edit" initial={product} productId={id} />`; includes "View on site ↗" link
-- `admin/products/actions.ts` — server actions, all gated by `requireAdmin()`:
-  - `createProductAction(input)` — zod-parsed insert; catches Postgres 23505 (slug collision) → friendly field error
-  - `updateProductAction(id, input)` — fetches existing slug first to revalidate old `/catalog/<old-slug>` if changed
-  - `deleteProductAction(id)` — invalidates `/catalog/<slug>` + list pages
-  - `reorderProductImagesAction(id, images)` — lightweight image-array update
-- All actions revalidate `/catalog`, `/catalog/<slug>`, and `/admin/products`
-- Cloudinary uploads use `<CldUploadWidget>` (next-cloudinary) with preset from `NEXT_PUBLIC_CLOUDINARY_ADMIN_UPLOAD_PRESET`
-- Form component: `components/admin/product-form.tsx` (RHF + zod, mirrors `productSchema` from actions.ts)
-- Image uploader: `components/admin/image-uploader.tsx` (thumb strip with move-up/down + remove; cover = index 0)
+## admin/* — Removed
+- The admin dashboard (product CRUD UI) was removed; admin role infrastructure is preserved in `middleware.ts` (`ADMIN_ONLY`, `profile.role !== "admin"` check) and `profiles.role`, so reintroducing the dashboard later only needs the routes/components back.
