@@ -100,9 +100,13 @@ export default async function AdminProductsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant="outline" className="capitalize">
-                        {product.category}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {product.category.map((c) => (
+                          <Badge key={c} variant="outline" className="capitalize">
+                            {c}
+                          </Badge>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       {formatPaiseToINR(product.base_price)}

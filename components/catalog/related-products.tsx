@@ -4,7 +4,7 @@ import type { Category } from "@/types/database";
 
 type RelatedProductsProps = {
   productId: string;
-  category: Category;
+  category: Category[];
   limit?: number;
 };
 

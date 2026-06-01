@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,6 +17,14 @@ type Values = z.infer<typeof schema>;
 export function OnboardingForm() {
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) window.location.replace("/");
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -32,6 +40,8 @@ export function OnboardingForm() {
       const result = await completeProfile(fd);
       if (result?.error) {
         setError("root", { message: result.error });
+      } else {
+        window.location.replace("/");
       }
     });
   }

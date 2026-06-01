@@ -26,7 +26,8 @@
       "Bash(xargs grep *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\rupap\\\\Projects\\\\RareOcto\" -Directory)",
       "Bash(Select-Object -ExpandProperty Name)",
-      "Bash(dir componentscatalog *)"
+      "Bash(dir componentscatalog *)",
+      "PowerShell(New-Item *)"
     ]
   },
   "enableAllProjectMcpServers": true,

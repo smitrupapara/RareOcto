@@ -1,6 +1,7 @@
 "use server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
 
 const schema = z.object({
@@ -21,12 +22,17 @@ export async function completeProfile(formData: FormData) {
 
   const { error } = await supabase
     .from("profiles")
-    .update({
-      name: result.data.name,
-      email: result.data.email || null,
-    })
-    .eq("id", user.id);
+    .upsert(
+      {
+        id: user.id,
+        phone: user.phone ? `+${user.phone.replace(/^\+/, "")}` : null,
+        name: result.data.name,
+        email: result.data.email || null,
+      },
+      { onConflict: "id" }
+    );
 
   if (error) return { error: error.message };
-  redirect("/");
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

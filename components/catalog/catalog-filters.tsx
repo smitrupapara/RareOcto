@@ -2,13 +2,22 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { ArrowUpDownIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   CATEGORY_VALUES,
-  MATERIAL_VALUES,
-  SIZE_VALUES,
+  COLOR_VALUES,
+  PATTERN_VALUES,
+  ROOM_VALUES,
   SORT_KEYS,
+  STYLE_VALUES,
   type SortKey,
 } from "@/lib/catalog/search";
 
@@ -19,19 +28,88 @@ const CATEGORY_LABEL: Record<(typeof CATEGORY_VALUES)[number], string> = {
   mural: "Mural",
   kids: "Kids",
   minimal: "Minimal",
+  "3d": "3D",
+  illustration: "Illustration",
 };
 
-const MATERIAL_LABEL: Record<(typeof MATERIAL_VALUES)[number], string> = {
-  "matte-vinyl": "Matte vinyl",
-  "glossy-vinyl": "Glossy vinyl",
-  "fabric-texture": "Fabric texture",
-  "magnetic-base": "Magnetic base",
+const ROOM_LABEL: Record<(typeof ROOM_VALUES)[number], string> = {
+  "living-room": "Living room",
+  bedroom: "Bedroom",
+  "kids-room": "Kids room",
+  kitchen: "Kitchen",
+  bathroom: "Bathroom",
+  study: "Study",
+  hallway: "Hallway",
+  "pooja-room": "Pooja room",
+  "dining-area": "Dining area",
+  pantry: "Pantry",
+  foyer: "Foyer",
+  cafe: "Cafe",
+  restaurant: "Restaurant",
+  office: "Office",
+  retail: "Retail",
+  salon: "Salon",
+  "director-chamber": "Director chamber",
+  "reception-area": "Reception area",
+  "conference-room": "Conference room",
+  "product-display": "Product display",
+  "entrance-branding": "Entrance branding",
+  nursery: "Nursery",
+  classroom: "Classroom",
+  playroom: "Playroom",
+  "accent-wall": "Accent wall",
+  entryway: "Entryway",
+  balcony: "Balcony",
 };
 
-const SIZE_LABEL: Record<(typeof SIZE_VALUES)[number], string> = {
-  S: "Small",
-  M: "Medium",
-  L: "Large",
+const COLOR_LABEL: Record<(typeof COLOR_VALUES)[number], string> = {
+  neutral: "Neutral",
+  pastel: "Pastel",
+  vibrant: "Vibrant",
+  dark: "Dark",
+  earthy: "Earthy",
+  monochrome: "Monochrome",
+  blue: "Blue",
+  green: "Green",
+  pink: "Pink",
+  gold: "Gold",
+  multi: "Multi",
+};
+
+const PATTERN_LABEL: Record<(typeof PATTERN_VALUES)[number], string> = {
+  floral: "Floral",
+  geometric: "Geometric",
+  abstract: "Abstract",
+  stripes: "Stripes",
+  "polka-dots": "Polka dots",
+  scenery: "Nature & scenery",
+  mandala: "Mandala",
+  typography: "Typography",
+  animal: "Animal",
+  tropical: "Tropical forest",
+  solid: "Solid",
+  organic: "Organic",
+  "marble-granite": "Marble & granite",
+  "world-map": "World map",
+  "wood-grain": "Wood grain",
+  "stone-texture": "Stone texture",
+  "canvas-texture": "Canvas texture",
+  divine: "Gods & deities",
+};
+
+const STYLE_LABEL: Record<(typeof STYLE_VALUES)[number], string> = {
+  modern: "Modern",
+  vintage: "Vintage",
+  boho: "Boho",
+  "traditional-indian": "Ancient Indian art",
+  scandinavian: "Scandinavian",
+  japandi: "Japandi",
+  minimal: "Minimal",
+  "art-deco": "Art deco",
+  "mid-century": "Mid-century",
+  rustic: "Rustic",
+  contemporary: "Contemporary",
+  egyptian: "Egyptian art",
 };
 
 const SORT_LABEL: Record<SortKey, string> = {
@@ -41,14 +119,81 @@ const SORT_LABEL: Record<SortKey, string> = {
   price_desc: "Price · High → Low",
 };
 
-const FILTER_KEYS = ["q", "category", "material", "size", "min", "max", "sort", "page"] as const;
+function sortedByLabel<T extends string>(
+  values: readonly T[],
+  labels: Record<T, string>,
+): T[] {
+  return [...values].sort((a, b) => labels[a].localeCompare(labels[b]));
+}
 
-const selectClass = cn(
-  "h-10 rounded-full border border-border bg-background px-4 pr-9 text-sm",
-  "appearance-none bg-[length:14px] bg-[right_0.85rem_center] bg-no-repeat",
-  "bg-[url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27currentColor%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27m6%209%206%206%206-6%27%2F%3E%3C%2Fsvg%3E\")]",
-  "focus:outline-none focus:ring-2 focus:ring-coral/40",
-);
+const SORTED_CATEGORIES = sortedByLabel(CATEGORY_VALUES, CATEGORY_LABEL);
+const SORTED_ROOMS = sortedByLabel(ROOM_VALUES, ROOM_LABEL);
+const SORTED_COLORS = sortedByLabel(COLOR_VALUES, COLOR_LABEL);
+const SORTED_PATTERNS = sortedByLabel(PATTERN_VALUES, PATTERN_LABEL);
+const SORTED_STYLES = sortedByLabel(STYLE_VALUES, STYLE_LABEL);
+
+const FILTER_KEYS = [
+  "q",
+  "category",
+  "room",
+  "color",
+  "pattern",
+  "style",
+  "min",
+  "max",
+  "sort",
+  "page",
+] as const;
+
+const ALL_VALUE = "__all__";
+
+type FilterKey = "category" | "room" | "color" | "pattern" | "style";
+
+type FilterConfig = {
+  key: FilterKey;
+  placeholder: string;
+  allLabel: string;
+  values: readonly string[];
+  labels: Record<string, string>;
+};
+
+const FILTERS: FilterConfig[] = [
+  {
+    key: "category",
+    placeholder: "Category",
+    allLabel: "All categories",
+    values: SORTED_CATEGORIES,
+    labels: CATEGORY_LABEL,
+  },
+  {
+    key: "room",
+    placeholder: "Room",
+    allLabel: "All rooms",
+    values: SORTED_ROOMS,
+    labels: ROOM_LABEL,
+  },
+  {
+    key: "color",
+    placeholder: "Color",
+    allLabel: "All colors",
+    values: SORTED_COLORS,
+    labels: COLOR_LABEL,
+  },
+  {
+    key: "pattern",
+    placeholder: "Pattern",
+    allLabel: "All patterns",
+    values: SORTED_PATTERNS,
+    labels: PATTERN_LABEL,
+  },
+  {
+    key: "style",
+    placeholder: "Style",
+    allLabel: "All styles",
+    values: SORTED_STYLES,
+    labels: STYLE_LABEL,
+  },
+];
 
 export function CatalogFilters() {
   const router = useRouter();
@@ -80,8 +225,10 @@ export function CatalogFilters() {
 
   const current = {
     category: searchParams.get("category") ?? "",
-    material: searchParams.get("material") ?? "",
-    size: searchParams.get("size") ?? "",
+    room: searchParams.get("room") ?? "",
+    color: searchParams.get("color") ?? "",
+    pattern: searchParams.get("pattern") ?? "",
+    style: searchParams.get("style") ?? "",
     sort: (searchParams.get("sort") as SortKey | null) ?? "new",
     min: searchParams.get("min") ?? "",
     max: searchParams.get("max") ?? "",
@@ -89,78 +236,85 @@ export function CatalogFilters() {
 
   const anyActive =
     !!current.category ||
-    !!current.material ||
-    !!current.size ||
+    !!current.room ||
+    !!current.color ||
+    !!current.pattern ||
+    !!current.style ||
     !!current.min ||
     !!current.max ||
     !!searchParams.get("q");
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select
-        aria-label="Category"
-        value={current.category}
-        onChange={(e) => update({ category: e.target.value || null })}
-        className={selectClass}
-      >
-        <option value="">All categories</option>
-        {CATEGORY_VALUES.map((c) => (
-          <option key={c} value={c}>
-            {CATEGORY_LABEL[c]}
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-1 flex-wrap items-center gap-2">
+        {FILTERS.map((filter) => {
+          const value = current[filter.key];
+          return (
+            <Select<string>
+              key={filter.key}
+              value={value === "" ? ALL_VALUE : value}
+              onValueChange={(next) =>
+                update({
+                  [filter.key]: next === ALL_VALUE ? null : next,
+                })
+              }
+            >
+              <SelectTrigger
+                aria-label={filter.placeholder}
+                className={
+                  value
+                    ? "border-coral/60 bg-coral/5 text-foreground"
+                    : undefined
+                }
+              >
+                <SelectValue>
+                  {value ? filter.labels[value] : filter.placeholder}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>{filter.allLabel}</SelectItem>
+                {filter.values.map((v) => (
+                  <SelectItem key={v} value={v}>
+                    {filter.labels[v]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        })}
 
-      <select
-        aria-label="Material"
-        value={current.material}
-        onChange={(e) => update({ material: e.target.value || null })}
-        className={selectClass}
-      >
-        <option value="">All materials</option>
-        {MATERIAL_VALUES.map((m) => (
-          <option key={m} value={m}>
-            {MATERIAL_LABEL[m]}
-          </option>
-        ))}
-      </select>
+        {anyActive ? (
+          <button
+            type="button"
+            onClick={clearAll}
+            className="ml-1 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            Clear all
+          </button>
+        ) : null}
+      </div>
 
-      <select
-        aria-label="Size"
-        value={current.size}
-        onChange={(e) => update({ size: e.target.value || null })}
-        className={selectClass}
-      >
-        <option value="">All sizes</option>
-        {SIZE_VALUES.map((s) => (
-          <option key={s} value={s}>
-            {SIZE_LABEL[s]}
-          </option>
-        ))}
-      </select>
-
-      <select
-        aria-label="Sort"
+      <Select<SortKey>
         value={current.sort}
-        onChange={(e) => update({ sort: e.target.value === "new" ? null : e.target.value })}
-        className={selectClass}
+        onValueChange={(next) =>
+          update({ sort: next === "new" ? null : next })
+        }
       >
-        {SORT_KEYS.map((s) => (
-          <option key={s} value={s}>
-            {SORT_LABEL[s]}
-          </option>
-        ))}
-      </select>
-
-      {anyActive ? (
-        <button
-          type="button"
-          onClick={clearAll}
-          className="ml-auto text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Clear all
-        </button>
-      ) : null}
+        <SelectTrigger aria-label="Sort by" className="ml-auto">
+          <ArrowUpDownIcon
+            className="size-3.5 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <SelectValue>{SORT_LABEL[current.sort]}</SelectValue>
+        </SelectTrigger>
+        <SelectContent align="end">
+          {SORT_KEYS.map((s) => (
+            <SelectItem key={s} value={s}>
+              {SORT_LABEL[s]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

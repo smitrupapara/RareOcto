@@ -9,7 +9,96 @@ export type ProductMaterial =
   | "glossy-vinyl"
   | "fabric-texture"
   | "magnetic-base";
-export type Category = "abstract" | "botanical" | "geometric" | "mural" | "kids" | "minimal";
+export type Category =
+  | "abstract"
+  | "botanical"
+  | "geometric"
+  | "mural"
+  | "kids"
+  | "minimal"
+  | "3d"
+  | "illustration";
+
+export type Room =
+  // home rooms
+  | "living-room"
+  | "bedroom"
+  | "kids-room"
+  | "kitchen"
+  | "bathroom"
+  | "study"
+  | "hallway"
+  | "pooja-room"
+  | "dining-area"
+  | "pantry"
+  | "foyer"
+  // commercial spaces
+  | "cafe"
+  | "restaurant"
+  | "office"
+  | "retail"
+  | "salon"
+  | "director-chamber"
+  | "reception-area"
+  | "conference-room"
+  | "product-display"
+  | "entrance-branding"
+  // kids-specific
+  | "nursery"
+  | "classroom"
+  | "playroom"
+  // feature walls
+  | "accent-wall"
+  | "entryway"
+  | "balcony";
+
+export type ColorPalette =
+  | "neutral"
+  | "pastel"
+  | "vibrant"
+  | "dark"
+  | "earthy"
+  | "monochrome"
+  | "blue"
+  | "green"
+  | "pink"
+  | "gold"
+  | "multi";
+
+export type PatternType =
+  | "floral"
+  | "geometric"
+  | "abstract"
+  | "stripes"
+  | "polka-dots"
+  | "scenery"
+  | "mandala"
+  | "typography"
+  | "animal"
+  | "tropical"
+  | "solid"
+  | "organic"
+  | "marble-granite"
+  | "world-map"
+  | "wood-grain"
+  | "stone-texture"
+  | "canvas-texture"
+  | "divine";
+
+export type StyleTheme =
+  | "modern"
+  | "vintage"
+  | "boho"
+  | "traditional-indian"
+  | "scandinavian"
+  | "japandi"
+  | "minimal"
+  | "art-deco"
+  | "mid-century"
+  | "rustic"
+  | "contemporary"
+  | "egyptian";
+
 export type OrderStatus =
   | "created"
   | "pending"
@@ -37,7 +126,11 @@ export type Product = {
   slug: string;
   name: string;
   description: string;
-  category: Category;
+  category: Category[];
+  rooms: Room[];
+  colors: ColorPalette[];
+  patterns: PatternType[];
+  styles: StyleTheme[];
   base_price: number;
   images: string[];
   available_sizes: ProductSize[];
@@ -176,6 +269,10 @@ export type Database = {
       product_size: ProductSize;
       product_material: ProductMaterial;
       category: Category;
+      room_type: Room;
+      color_palette: ColorPalette;
+      pattern_type: PatternType;
+      style_theme: StyleTheme;
       order_status: OrderStatus;
       role: Role;
     };

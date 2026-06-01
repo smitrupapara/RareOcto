@@ -34,13 +34,25 @@ export async function listProducts(filters: CatalogFilters): Promise<ListProduct
   }
 
   if (filters.category) {
-    query = query.eq("category", filters.category);
+    query = query.contains("category", [filters.category]);
   }
   if (filters.material) {
     query = query.contains("available_materials", [filters.material]);
   }
   if (filters.size) {
     query = query.contains("available_sizes", [filters.size]);
+  }
+  if (filters.room) {
+    query = query.contains("rooms", [filters.room]);
+  }
+  if (filters.color) {
+    query = query.contains("colors", [filters.color]);
+  }
+  if (filters.pattern) {
+    query = query.contains("patterns", [filters.pattern]);
+  }
+  if (filters.style) {
+    query = query.contains("styles", [filters.style]);
   }
   if (filters.minPrice !== null) {
     query = query.gte("base_price", filters.minPrice);
@@ -102,13 +114,44 @@ export async function getRelatedProducts(
   limit = 8,
 ): Promise<Product[]> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("category", category)
-    .neq("id", productId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+
+  // `category` is typed as an array but legacy rows / serialization can
+  // hand us a scalar or null. Normalize before reading the primary value.
+  const categories = Array.isArray(category)
+    ? category.filter((c): c is Product["category"][number] => Boolean(c))
+    : typeof category === "string" && category
+      ? [category as Product["category"][number]]
+      : [];
+  const primary = categories[0];
+
+  // No category to match against — return most recent products excluding
+  // the current one. This branch never hits the enum-array filter.
+  if (!primary) {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .neq("id", productId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(`getRelatedProducts failed: ${error.message}`);
+    return (data ?? []) as Product[];
+  }
+
+  // PostgREST cannot resolve `category @> {...}` against the public.category[]
+  // enum column (the value-side comes through as `unknown`). The RPC
+  // get_related_products (migration 0007) does the array filter inside a
+  // SQL function where the casts are explicit.
+  const { data, error } = await (supabase.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: Product[] | null; error: { message: string } | null }>)(
+    "get_related_products",
+    {
+      p_product_id: productId,
+      p_category: primary,
+      p_limit: limit,
+    },
+  );
   if (error) throw new Error(`getRelatedProducts failed: ${error.message}`);
   return (data ?? []) as Product[];
 }

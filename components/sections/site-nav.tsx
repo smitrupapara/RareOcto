@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { ChevronDown, Menu, Moon, ShoppingBag, Sun } from "lucide-react";
+import { ChevronDown, Heart, Menu, Moon, ShoppingBag, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -117,6 +117,20 @@ export function SiteNav({
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-2">
+          {profile ? (
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              aria-label="Saved pieces"
+              className="rounded-full"
+            >
+              <Link href="/account/favorites">
+                <Heart className="size-5" />
+              </Link>
+            </Button>
+          ) : null}
+
           <Button
             asChild
             variant="ghost"
@@ -165,8 +179,8 @@ export function SiteNav({
                   <DropdownMenuLabel>{profile.phone}</DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/account")}>
-                  Account
+                <DropdownMenuItem onClick={() => router.push("/account/favorites")}>
+                  Favorites
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -220,6 +234,16 @@ export function SiteNav({
                     About
                   </button>
                 </SheetClose>
+                {profile ? (
+                  <SheetClose asChild>
+                    <Link
+                      href="/account/favorites"
+                      className="rounded-xl px-3 py-3 transition-colors hover:bg-accent/40"
+                    >
+                      Favorites
+                    </Link>
+                  </SheetClose>
+                ) : null}
                 <div className="mt-4 border-t pt-4">
                   {profile ? (
                     <button

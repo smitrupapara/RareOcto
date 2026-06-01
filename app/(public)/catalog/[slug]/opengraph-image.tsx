@@ -12,7 +12,7 @@ type RouteProps = { params: Promise<{ slug: string }> };
 
 type ProductRow = {
   name: string;
-  category: string;
+  category: string[];
   description: string;
   images: string[];
 };
@@ -54,8 +54,9 @@ export default async function OGImage({ params }: RouteProps) {
   const cover = product?.images?.[0];
   const productImageUrl = cover ? cloudinaryOg(cover) : null;
 
-  const categoryLabel = product?.category
-    ? product.category.charAt(0).toUpperCase() + product.category.slice(1)
+  const firstCategory = product?.category?.[0];
+  const categoryLabel = firstCategory
+    ? firstCategory.charAt(0).toUpperCase() + firstCategory.slice(1)
     : "Magnetic Wallpaper";
 
   const description =

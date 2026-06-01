@@ -10,10 +10,13 @@
  *
  * CSV columns (header row required, see products-template.csv):
  *   slug, name, description, category, base_price, sizes, materials,
+ *   rooms, colors, patterns, styles,
  *   material_modifiers_json, dimensions_json, tags, stock, image_count,
  *   meta_title, meta_description
  *
- *   - sizes/materials/tags are pipe-separated (`S|M|L`)
+ *   - category/sizes/materials/rooms/colors/patterns/styles/tags are
+ *     pipe-separated (`S|M|L`). category requires at least one value.
+ *     rooms/colors/patterns/styles are optional (empty allowed).
  *   - *_json columns are inline JSON strings
  *   - image_count is the number of images in `rareocto/products/<slug>/`;
  *     resolves to `['rareocto/products/<slug>/01', ..., '<NN>']`
@@ -29,16 +32,24 @@ import { createClient } from "@supabase/supabase-js";
 
 import type {
   Category,
+  ColorPalette,
   Database,
   MaterialPriceModifier,
+  PatternType,
   ProductDimensions,
   ProductMaterial,
   ProductSize,
+  Room,
+  StyleTheme,
 } from "../types/database";
 import {
   CATEGORY_VALUES,
+  COLOR_VALUES,
   MATERIAL_VALUES,
+  PATTERN_VALUES,
+  ROOM_VALUES,
   SIZE_VALUES,
+  STYLE_VALUES,
 } from "../lib/catalog/search";
 
 type CsvRow = Record<string, string>;
@@ -47,11 +58,15 @@ type ProductInsert = {
   slug: string;
   name: string;
   description: string;
-  category: Category;
+  category: Category[];
   base_price: number;
   images: string[];
   available_sizes: ProductSize[];
   available_materials: ProductMaterial[];
+  rooms: Room[];
+  colors: ColorPalette[];
+  patterns: PatternType[];
+  styles: StyleTheme[];
   material_price_modifier: MaterialPriceModifier;
   dimensions: ProductDimensions;
   tags: string[];
@@ -162,9 +177,14 @@ function rowToProduct(row: CsvRow): ProductInsert {
     fail(`bad slug: "${slug}" (expected kebab-case)`);
   }
 
-  const category = row.category as Category;
-  if (!CATEGORY_VALUES.includes(category)) {
-    fail(`row ${slug}: category "${row.category}" must be one of ${CATEGORY_VALUES.join(", ")}`);
+  const categories = splitPipe(row.category).map((c) => {
+    if (!CATEGORY_VALUES.includes(c as Category)) {
+      fail(`row ${slug}: category "${c}" must be one of ${CATEGORY_VALUES.join(", ")}`);
+    }
+    return c as Category;
+  });
+  if (categories.length === 0) {
+    fail(`row ${slug}: at least one category is required`);
   }
 
   const sizes = splitPipe(row.sizes).map((s) => {
@@ -183,6 +203,34 @@ function rowToProduct(row: CsvRow): ProductInsert {
     return m as ProductMaterial;
   });
 
+  const rooms = splitPipe(row.rooms ?? "").map((r) => {
+    if (!ROOM_VALUES.includes(r as Room)) {
+      fail(`row ${slug}: room "${r}" must be one of ${ROOM_VALUES.join(", ")}`);
+    }
+    return r as Room;
+  });
+
+  const colors = splitPipe(row.colors ?? "").map((c) => {
+    if (!COLOR_VALUES.includes(c as ColorPalette)) {
+      fail(`row ${slug}: color "${c}" must be one of ${COLOR_VALUES.join(", ")}`);
+    }
+    return c as ColorPalette;
+  });
+
+  const patterns = splitPipe(row.patterns ?? "").map((p) => {
+    if (!PATTERN_VALUES.includes(p as PatternType)) {
+      fail(`row ${slug}: pattern "${p}" must be one of ${PATTERN_VALUES.join(", ")}`);
+    }
+    return p as PatternType;
+  });
+
+  const styles = splitPipe(row.styles ?? "").map((s) => {
+    if (!STYLE_VALUES.includes(s as StyleTheme)) {
+      fail(`row ${slug}: style "${s}" must be one of ${STYLE_VALUES.join(", ")}`);
+    }
+    return s as StyleTheme;
+  });
+
   const basePrice = Number.parseInt(row.base_price, 10);
   if (!Number.isFinite(basePrice) || basePrice <= 0) {
     fail(`row ${slug}: base_price must be a positive integer (paise), got "${row.base_price}"`);
@@ -194,11 +242,15 @@ function rowToProduct(row: CsvRow): ProductInsert {
     slug,
     name: row.name,
     description: row.description,
-    category,
+    category: categories,
     base_price: basePrice,
     images: buildImageIds(slug, imageCount),
     available_sizes: sizes,
     available_materials: materials,
+    rooms,
+    colors,
+    patterns,
+    styles,
     material_price_modifier: parseJsonField<MaterialPriceModifier>(
       row.material_modifiers_json,
       {},

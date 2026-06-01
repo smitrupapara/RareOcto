@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,7 +21,16 @@ type PhoneValues = z.infer<typeof phoneSchema>;
 type OtpValues = z.infer<typeof otpSchema>;
 
 export function LoginForm() {
+  const router = useRouter();
   const [step, setStep] = useState<"phone" | "otp">("phone");
+
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) window.location.replace("/");
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
   const [phone, setPhone] = useState("");
   const [serverError, setServerError] = useState("");
   const [countdown, setCountdown] = useState(0);
@@ -61,7 +71,11 @@ export function LoginForm() {
     if (next) fd.set("next", next);
     startTransition(async () => {
       const result = await verifyOtp(fd);
-      if (result?.error) setServerError(result.error);
+      if (result?.error) {
+        setServerError(result.error);
+      } else {
+        router.replace(result.next ?? "/");
+      }
     });
   }
 

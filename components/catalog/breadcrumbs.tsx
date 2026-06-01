@@ -11,6 +11,8 @@ const CATEGORY_LABEL: Record<Category, string> = {
   mural: "Mural",
   kids: "Kids",
   minimal: "Minimal",
+  "3d": "3D",
+  illustration: "Illustration",
 };
 
 type Crumb = { label: string; href?: string };
@@ -54,11 +56,21 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
   );
 }
 
-export function buildProductBreadcrumbs(category: Category, productName: string): Crumb[] {
-  return [
+export function buildProductBreadcrumbs(
+  category: Category[],
+  productName: string,
+): Crumb[] {
+  const primary = category[0];
+  const crumbs: Crumb[] = [
     { label: "Home", href: "/" },
     { label: "Catalog", href: "/catalog" },
-    { label: CATEGORY_LABEL[category], href: `/catalog?category=${category}` },
-    { label: productName },
   ];
+  if (primary) {
+    crumbs.push({
+      label: CATEGORY_LABEL[primary],
+      href: `/catalog?category=${primary}`,
+    });
+  }
+  crumbs.push({ label: productName });
+  return crumbs;
 }

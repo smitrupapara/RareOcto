@@ -10,17 +10,25 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   CATEGORY_VALUES,
+  COLOR_VALUES,
   MATERIAL_VALUES,
+  PATTERN_VALUES,
+  ROOM_VALUES,
   SIZE_VALUES,
+  STYLE_VALUES,
 } from "@/lib/catalog/search";
 import { formatPaiseToINR } from "@/lib/catalog/format";
 import type {
   Category,
+  ColorPalette,
   MaterialPriceModifier,
+  PatternType,
   Product,
   ProductDimensions,
   ProductMaterial,
   ProductSize,
+  Room,
+  StyleTheme,
 } from "@/types/database";
 import {
   createProductAction,
@@ -41,7 +49,9 @@ const formSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use kebab-case (a-z, 0-9, hyphens)"),
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().min(1).max(5000),
-  category: z.enum(CATEGORY_VALUES as [string, ...string[]]),
+  category: z
+    .array(z.enum(CATEGORY_VALUES as [string, ...string[]]))
+    .min(1, "Pick at least one category"),
   base_price: z.number().int().min(0).max(100_000_00),
   available_sizes: z
     .array(z.enum(SIZE_VALUES as [string, ...string[]]))
@@ -49,6 +59,10 @@ const formSchema = z.object({
   available_materials: z
     .array(z.enum(MATERIAL_VALUES as [string, ...string[]]))
     .min(1, "Pick at least one material"),
+  rooms: z.array(z.enum(ROOM_VALUES as [string, ...string[]])).default([]),
+  colors: z.array(z.enum(COLOR_VALUES as [string, ...string[]])).default([]),
+  patterns: z.array(z.enum(PATTERN_VALUES as [string, ...string[]])).default([]),
+  styles: z.array(z.enum(STYLE_VALUES as [string, ...string[]])).default([]),
   stock: z.number().int().min(0).max(100_000),
   tags_csv: z.string().trim().max(400),
   meta_title: z.string().trim().max(160),
@@ -64,6 +78,8 @@ const CATEGORY_LABEL: Record<Category, string> = {
   mural: "Mural",
   kids: "Kids",
   minimal: "Minimal",
+  "3d": "3D",
+  illustration: "Illustration",
 };
 
 const MATERIAL_LABEL: Record<ProductMaterial, string> = {
@@ -77,6 +93,86 @@ const SIZE_LABEL: Record<ProductSize, string> = {
   S: "Small",
   M: "Medium",
   L: "Large",
+};
+
+const ROOM_LABEL: Record<Room, string> = {
+  "living-room": "Living room",
+  bedroom: "Bedroom",
+  "kids-room": "Kids room",
+  kitchen: "Kitchen",
+  bathroom: "Bathroom",
+  study: "Study",
+  hallway: "Hallway",
+  "pooja-room": "Pooja room",
+  "dining-area": "Dining area",
+  pantry: "Pantry",
+  foyer: "Foyer",
+  cafe: "Cafe",
+  restaurant: "Restaurant",
+  office: "Office",
+  retail: "Retail",
+  salon: "Salon",
+  "director-chamber": "Director chamber",
+  "reception-area": "Reception area",
+  "conference-room": "Conference room",
+  "product-display": "Product display",
+  "entrance-branding": "Entrance branding",
+  nursery: "Nursery",
+  classroom: "Classroom",
+  playroom: "Playroom",
+  "accent-wall": "Accent wall",
+  entryway: "Entryway",
+  balcony: "Balcony",
+};
+
+const COLOR_LABEL: Record<ColorPalette, string> = {
+  neutral: "Neutral",
+  pastel: "Pastel",
+  vibrant: "Vibrant",
+  dark: "Dark",
+  earthy: "Earthy",
+  monochrome: "Monochrome",
+  blue: "Blue",
+  green: "Green",
+  pink: "Pink",
+  gold: "Gold",
+  multi: "Multi",
+};
+
+const PATTERN_LABEL: Record<PatternType, string> = {
+  floral: "Floral",
+  geometric: "Geometric",
+  abstract: "Abstract",
+  stripes: "Stripes",
+  "polka-dots": "Polka dots",
+  scenery: "Nature & scenery",
+  mandala: "Mandala",
+  typography: "Typography",
+  animal: "Animal",
+  tropical: "Tropical forest",
+  solid: "Solid",
+  organic: "Organic",
+  "marble-granite": "Marble & granite",
+  "world-map": "World map",
+  "wood-grain": "Wood grain",
+  "stone-texture": "Stone texture",
+  "canvas-texture": "Canvas texture",
+  divine: "Gods & deities",
+};
+
+const STYLE_LABEL: Record<StyleTheme, string> = {
+  modern: "Modern",
+  vintage: "Vintage",
+  boho: "Boho",
+  "traditional-indian": "Ancient Indian art",
+  scandinavian: "Scandinavian",
+  japandi: "Japandi",
+  minimal: "Minimal",
+  "art-deco": "Art deco",
+  "mid-century": "Mid-century",
+  rustic: "Rustic",
+  contemporary: "Contemporary",
+  egyptian: "Egyptian art",
 };
 
 type Mode = "create" | "edit";
@@ -106,11 +202,15 @@ export function ProductForm(props: ProductFormProps) {
       slug: props.initial?.slug ?? "",
       name: props.initial?.name ?? "",
       description: props.initial?.description ?? "",
-      category: (props.initial?.category as Category) ?? "abstract",
+      category: (props.initial?.category as Category[]) ?? [],
       base_price: props.initial?.base_price ?? 0,
       available_sizes: (props.initial?.available_sizes as ProductSize[]) ?? [],
       available_materials:
         (props.initial?.available_materials as ProductMaterial[]) ?? [],
+      rooms: (props.initial?.rooms as Room[]) ?? [],
+      colors: (props.initial?.colors as ColorPalette[]) ?? [],
+      patterns: (props.initial?.patterns as PatternType[]) ?? [],
+      styles: (props.initial?.styles as StyleTheme[]) ?? [],
       stock: props.initial?.stock ?? 0,
       tags_csv: props.initial?.tags?.join(", ") ?? "",
       meta_title: props.initial?.meta_title ?? "",
@@ -118,10 +218,22 @@ export function ProductForm(props: ProductFormProps) {
     },
   });
 
+  const watchCategories = (form.watch("category") as Category[]) ?? [];
   const watchSizes = (form.watch("available_sizes") as ProductSize[]) ?? [];
   const watchMaterials =
     (form.watch("available_materials") as ProductMaterial[]) ?? [];
+  const watchRooms = (form.watch("rooms") as Room[]) ?? [];
+  const watchColors = (form.watch("colors") as ColorPalette[]) ?? [];
+  const watchPatterns = (form.watch("patterns") as PatternType[]) ?? [];
+  const watchStyles = (form.watch("styles") as StyleTheme[]) ?? [];
   const basePrice = form.watch("base_price");
+
+  function toggleCategory(value: Category) {
+    const current = new Set(watchCategories);
+    if (current.has(value)) current.delete(value);
+    else current.add(value);
+    form.setValue("category", Array.from(current), { shouldValidate: true });
+  }
 
   function toggleSize(size: ProductSize) {
     const current = new Set(watchSizes);
@@ -149,6 +261,34 @@ export function ProductForm(props: ProductFormProps) {
       Array.from(current),
       { shouldValidate: true },
     );
+  }
+
+  function toggleRoom(value: Room) {
+    const current = new Set(watchRooms);
+    if (current.has(value)) current.delete(value);
+    else current.add(value);
+    form.setValue("rooms", Array.from(current), { shouldValidate: true });
+  }
+
+  function toggleColor(value: ColorPalette) {
+    const current = new Set(watchColors);
+    if (current.has(value)) current.delete(value);
+    else current.add(value);
+    form.setValue("colors", Array.from(current), { shouldValidate: true });
+  }
+
+  function togglePattern(value: PatternType) {
+    const current = new Set(watchPatterns);
+    if (current.has(value)) current.delete(value);
+    else current.add(value);
+    form.setValue("patterns", Array.from(current), { shouldValidate: true });
+  }
+
+  function toggleStyle(value: StyleTheme) {
+    const current = new Set(watchStyles);
+    if (current.has(value)) current.delete(value);
+    else current.add(value);
+    form.setValue("styles", Array.from(current), { shouldValidate: true });
   }
 
   function setModifier(material: ProductMaterial, paise: number) {
@@ -195,11 +335,15 @@ export function ProductForm(props: ProductFormProps) {
       slug: values.slug,
       name: values.name,
       description: values.description,
-      category: values.category as Category,
+      category: values.category as Category[],
       base_price: values.base_price,
       images,
       available_sizes: values.available_sizes as ProductSize[],
       available_materials: values.available_materials as ProductMaterial[],
+      rooms: values.rooms as Room[],
+      colors: values.colors as ColorPalette[],
+      patterns: values.patterns as PatternType[],
+      styles: values.styles as StyleTheme[],
       material_price_modifier: trimmedModifiers,
       dimensions: trimmedDimensions,
       tags,
@@ -301,20 +445,26 @@ export function ProductForm(props: ProductFormProps) {
 
         <Field
           id="category"
-          label="Category"
+          label="Categories"
+          hint="Pick one or more — products can sit in multiple categories."
           error={form.formState.errors.category?.message ?? fieldErrors.category}
+          className="lg:col-span-2"
         >
-          <select
-            id="category"
-            {...form.register("category")}
-            className={inputClass}
-          >
-            {CATEGORY_VALUES.map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_LABEL[c]}
-              </option>
-            ))}
-          </select>
+          <div id="category" className="flex flex-wrap gap-2">
+            {CATEGORY_VALUES.map((c) => {
+              const active = watchCategories.includes(c);
+              return (
+                <button
+                  type="button"
+                  key={c}
+                  onClick={() => toggleCategory(c)}
+                  className={pillClass(active)}
+                >
+                  {CATEGORY_LABEL[c]}
+                </button>
+              );
+            })}
+          </div>
         </Field>
 
         <Field
@@ -528,6 +678,100 @@ export function ProductForm(props: ProductFormProps) {
             </div>
           </div>
         ) : null}
+      </section>
+
+      <section className="rounded-2xl border border-border bg-card/40 p-6">
+        <h2 className="font-display text-lg font-semibold">Discovery filters</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Optional dimensions that power catalog filters. Pick everything that
+          fits — leave a group empty if it doesn&rsquo;t apply.
+        </p>
+
+        <div className="mt-5 grid gap-6 lg:grid-cols-2">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Rooms / spaces
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {ROOM_VALUES.map((value) => {
+                const active = watchRooms.includes(value);
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => toggleRoom(value)}
+                    className={pillClass(active)}
+                  >
+                    {ROOM_LABEL[value]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Colors / palette
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {COLOR_VALUES.map((value) => {
+                const active = watchColors.includes(value);
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => toggleColor(value)}
+                    className={pillClass(active)}
+                  >
+                    {COLOR_LABEL[value]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Patterns / motifs
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {PATTERN_VALUES.map((value) => {
+                const active = watchPatterns.includes(value);
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => togglePattern(value)}
+                    className={pillClass(active)}
+                  >
+                    {PATTERN_LABEL[value]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Styles / themes
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {STYLE_VALUES.map((value) => {
+                const active = watchStyles.includes(value);
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => toggleStyle(value)}
+                    className={pillClass(active)}
+                  >
+                    {STYLE_LABEL[value]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-card/40 p-6">

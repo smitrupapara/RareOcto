@@ -37,10 +37,10 @@ export async function middleware(request: NextRequest) {
     const needsAdminCheck = ADMIN_ONLY.some(p => pathname.startsWith(p));
     const { data: profile } = await supabase
       .from("profiles").select("name, role").eq("id", user.id).maybeSingle();
-    if (profile && profile.name === null) {
+    if (!profile || !profile.name) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
-    if (needsAdminCheck && profile?.role !== "admin") {
+    if (needsAdminCheck && profile.role !== "admin") {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }

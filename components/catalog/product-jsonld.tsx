@@ -14,6 +14,7 @@ export function ProductJsonLd({ product, aggregate }: ProductJsonLdProps) {
   const url = `${SITE_URL}/catalog/${product.slug}`;
   const images = product.images.slice(0, 6).map((id) => og(id));
   const priceRupees = (product.base_price / 100).toFixed(2);
+  const primaryCategory = product.category[0];
 
   const json: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -24,7 +25,7 @@ export function ProductJsonLd({ product, aggregate }: ProductJsonLdProps) {
     brand: { "@type": "Brand", name: "RareOcto" },
     image: images,
     url,
-    category: product.category,
+    category: product.category.join(", "),
     offers: {
       "@type": "Offer",
       url,
@@ -48,20 +49,29 @@ export function ProductJsonLd({ product, aggregate }: ProductJsonLdProps) {
     };
   }
 
+  const breadcrumbItems: Array<Record<string, unknown>> = [
+    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+    { "@type": "ListItem", position: 2, name: "Catalog", item: `${SITE_URL}/catalog` },
+  ];
+  if (primaryCategory) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 3,
+      name: primaryCategory,
+      item: `${SITE_URL}/catalog?category=${primaryCategory}`,
+    });
+  }
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position: primaryCategory ? 4 : 3,
+    name: product.name,
+    item: url,
+  });
+
   const breadcrumb = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "Catalog", item: `${SITE_URL}/catalog` },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: product.category,
-        item: `${SITE_URL}/catalog?category=${product.category}`,
-      },
-      { "@type": "ListItem", position: 4, name: product.name, item: url },
-    ],
+    itemListElement: breadcrumbItems,
   };
 
   return (

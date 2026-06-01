@@ -8,24 +8,36 @@ import { getCurrentProfile } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   CATEGORY_VALUES,
+  COLOR_VALUES,
   MATERIAL_VALUES,
+  PATTERN_VALUES,
+  ROOM_VALUES,
   SIZE_VALUES,
+  STYLE_VALUES,
 } from "@/lib/catalog/search";
 import type {
   Category,
+  ColorPalette,
+  PatternType,
   ProductMaterial,
   ProductSize,
+  Room,
+  StyleTheme,
 } from "@/types/database";
 
 type ProductInsertRow = {
   slug: string;
   name: string;
   description: string;
-  category: Category;
+  category: Category[];
   base_price: number;
   images: string[];
   available_sizes: ProductSize[];
   available_materials: ProductMaterial[];
+  rooms: Room[];
+  colors: ColorPalette[];
+  patterns: PatternType[];
+  styles: StyleTheme[];
   material_price_modifier: Partial<Record<ProductMaterial, number>>;
   dimensions: Partial<Record<ProductSize, { w_cm: number; h_cm: number }>>;
   tags: string[];
@@ -62,11 +74,17 @@ const productSchema = z.object({
   slug: slugSchema,
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().min(1).max(5000),
-  category: z.enum(CATEGORY_VALUES as [string, ...string[]]),
+  category: z
+    .array(z.enum(CATEGORY_VALUES as [string, ...string[]]))
+    .min(1, "Pick at least one category"),
   base_price: z.number().int().min(0).max(100_000_00),
   images: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
   available_sizes: z.array(z.enum(SIZE_VALUES as [string, ...string[]])).min(1),
   available_materials: z.array(z.enum(MATERIAL_VALUES as [string, ...string[]])).min(1),
+  rooms: z.array(z.enum(ROOM_VALUES as [string, ...string[]])).default([]),
+  colors: z.array(z.enum(COLOR_VALUES as [string, ...string[]])).default([]),
+  patterns: z.array(z.enum(PATTERN_VALUES as [string, ...string[]])).default([]),
+  styles: z.array(z.enum(STYLE_VALUES as [string, ...string[]])).default([]),
   material_price_modifier: modifiersSchema,
   dimensions: dimensionsSchema,
   tags: z.array(z.string().trim().min(1).max(40)).max(20).default([]),

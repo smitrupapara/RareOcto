@@ -8,7 +8,7 @@ import { FavoriteToggle } from "@/components/catalog/favorite-toggle";
 import { cn } from "@/lib/utils";
 import { cloudinaryLoader } from "@/lib/cloudinary/loader";
 import { formatPaiseToINR } from "@/lib/catalog/format";
-import type { Product } from "@/types/database";
+import type { Category, Product } from "@/types/database";
 
 type ProductCardProps = {
   product: Product;
@@ -18,13 +18,15 @@ type ProductCardProps = {
   isFavorite?: boolean;
 };
 
-const CATEGORY_LABEL: Record<Product["category"], string> = {
+const CATEGORY_LABEL: Record<Category, string> = {
   abstract: "Abstract",
   botanical: "Botanical",
   geometric: "Geometric",
   mural: "Mural",
   kids: "Kids",
   minimal: "Minimal",
+  "3d": "3D",
+  illustration: "Illustration",
 };
 
 export function ProductCard({
@@ -59,12 +61,14 @@ export function ProductCard({
               no image
             </div>
           )}
-          <Badge
-            variant="secondary"
-            className="absolute left-3 top-3 rounded-full bg-background/85 px-2.5 text-[10px] uppercase tracking-[0.18em] backdrop-blur"
-          >
-            {CATEGORY_LABEL[product.category]}
-          </Badge>
+          {product.category[0] ? (
+            <Badge
+              variant="secondary"
+              className="absolute left-3 top-3 rounded-full bg-background/85 px-2.5 text-[10px] uppercase tracking-[0.18em] backdrop-blur"
+            >
+              {CATEGORY_LABEL[product.category[0]]}
+            </Badge>
+          ) : null}
         </div>
         <div className="flex flex-1 flex-col gap-1 p-4">
           <h3 className="line-clamp-2 font-display text-base font-semibold tracking-tight">
