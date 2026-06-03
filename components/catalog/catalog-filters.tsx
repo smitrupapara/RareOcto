@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { ArrowUpDownIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -11,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SHOW_PRICE } from "@/lib/catalog/format";
 import {
   CATEGORY_VALUES,
   COLOR_VALUES,
@@ -245,8 +247,8 @@ export function CatalogFilters() {
     !!searchParams.get("q");
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="flex flex-1 flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:items-center">
         {FILTERS.map((filter) => {
           const value = current[filter.key];
           return (
@@ -261,11 +263,10 @@ export function CatalogFilters() {
             >
               <SelectTrigger
                 aria-label={filter.placeholder}
-                className={
-                  value
-                    ? "border-coral/60 bg-coral/5 text-foreground"
-                    : undefined
-                }
+                className={cn(
+                  "w-full sm:w-auto",
+                  value && "border-coral/60 bg-coral/5 text-foreground",
+                )}
               >
                 <SelectValue>
                   {value ? filter.labels[value] : filter.placeholder}
@@ -282,39 +283,43 @@ export function CatalogFilters() {
             </Select>
           );
         })}
+      </div>
 
+      <div className="flex items-center justify-between gap-2 sm:contents">
         {anyActive ? (
           <button
             type="button"
             onClick={clearAll}
-            className="ml-1 text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+            className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline sm:order-first"
           >
             Clear all
           </button>
         ) : null}
-      </div>
 
-      <Select<SortKey>
-        value={current.sort}
-        onValueChange={(next) =>
-          update({ sort: next === "new" ? null : next })
-        }
-      >
-        <SelectTrigger aria-label="Sort by" className="ml-auto">
-          <ArrowUpDownIcon
-            className="size-3.5 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <SelectValue>{SORT_LABEL[current.sort]}</SelectValue>
-        </SelectTrigger>
-        <SelectContent align="end">
-          {SORT_KEYS.map((s) => (
-            <SelectItem key={s} value={s}>
-              {SORT_LABEL[s]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select<SortKey>
+          value={current.sort}
+          onValueChange={(next) =>
+            update({ sort: next === "new" ? null : next })
+          }
+        >
+          <SelectTrigger aria-label="Sort by" className="ml-auto">
+            <ArrowUpDownIcon
+              className="size-3.5 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <SelectValue>{SORT_LABEL[current.sort]}</SelectValue>
+          </SelectTrigger>
+          <SelectContent align="end">
+            {SORT_KEYS.filter(
+              (s) => SHOW_PRICE || (s !== "price_asc" && s !== "price_desc"),
+            ).map((s) => (
+              <SelectItem key={s} value={s}>
+                {SORT_LABEL[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }

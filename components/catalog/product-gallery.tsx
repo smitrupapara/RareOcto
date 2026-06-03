@@ -19,7 +19,7 @@ export function ProductGallery({ images, alt, className }: ProductGalleryProps) 
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-3xl border border-border bg-muted">
+      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-lg border border-border bg-muted">
         {current ? (
           <Image
             loader={cloudinaryLoader}
@@ -52,7 +52,7 @@ export function ProductGallery({ images, alt, className }: ProductGalleryProps) 
                 aria-label={`Show image ${i + 1}`}
                 onClick={() => setActive(i)}
                 className={cn(
-                  "relative aspect-square w-full overflow-hidden rounded-xl border bg-muted transition",
+                  "relative aspect-square w-full overflow-hidden rounded-md border bg-muted transition",
                   i === active
                     ? "border-coral ring-2 ring-coral/40"
                     : "border-border hover:border-foreground/40",

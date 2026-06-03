@@ -120,7 +120,7 @@ Files: `components/sections/site-nav.tsx`, `components/sections/logo.tsx`, `comp
 Notes: Theme toggle uses **direct DOM manipulation + `localStorage('theme')`** — not `next-themes` (React 19 compat issue). Backdrop blurs after 24px scroll. Mobile uses right-side Sheet drawer.
 
 ### Site Footer · ✅
-Purpose: Brand details, navigation, contact info (hello@rareocto.com · +91 98240 83085 · B-911 Titanium City Center, Ahmedabad), legal/GST.
+Purpose: Brand details, navigation, contact info (contact@rareocto.com · +91 70693 99399 · B-911 Titanium City Center, Ahmedabad), legal/GST.
 Files: `components/sections/site-footer.tsx`
 Notes: 3-column grid. "Coming Soon" column lists Try-On / About / Blog.
 

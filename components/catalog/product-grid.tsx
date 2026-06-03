@@ -10,7 +10,7 @@ type ProductGridProps = {
 export function ProductGrid({ products, isAuthed = false, favoriteIds }: ProductGridProps) {
   if (products.length === 0) return null;
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-3">
       {products.map((product, i) => (
         <ProductCard
           key={product.id}

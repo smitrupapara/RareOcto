@@ -11,7 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { CartLineItem } from "@/components/catalog/cart-line-item";
-import { formatPaiseToINR } from "@/lib/catalog/format";
+import { SHOW_PRICE, formatPaiseToINR } from "@/lib/catalog/format";
 import type { CartItem, Product } from "@/types/database";
 
 type CartLine = {
@@ -86,12 +86,14 @@ export function CartDrawer({ lines, subtotal, cartCount }: CartDrawerProps) {
             </ul>
 
             <div className="border-t pt-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium tabular-nums">
-                  {formatPaiseToINR(subtotal)}
-                </span>
-              </div>
+              {SHOW_PRICE ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium tabular-nums">
+                    {formatPaiseToINR(subtotal)}
+                  </span>
+                </div>
+              ) : null}
               <p className="mt-1 text-xs text-muted-foreground">
                 Shipping calculated at checkout.
               </p>

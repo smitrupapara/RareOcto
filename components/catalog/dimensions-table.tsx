@@ -1,60 +1,43 @@
 import { cn } from "@/lib/utils";
-import type { ProductDimensions, ProductSize } from "@/types/database";
-
-const SIZE_LABEL: Record<ProductSize, string> = {
-  S: "Small",
-  M: "Medium",
-  L: "Large",
-};
+import { SHOW_PRICE } from "@/lib/catalog/format";
+import { MAX_DIM_FT, MIN_DIM_FT } from "@/lib/catalog/search";
 
 type DimensionsTableProps = {
-  dimensions: ProductDimensions;
-  availableSizes: ProductSize[];
   className?: string;
 };
 
-const SIZE_ORDER: ProductSize[] = ["S", "M", "L"];
+const UNITS: Array<{ label: string; range: string }> = [
+  { label: "Feet", range: `${MIN_DIM_FT} – ${MAX_DIM_FT}` },
+  { label: "Inches", range: `${MIN_DIM_FT * 12} – ${MAX_DIM_FT * 12}` },
+  { label: "Centimetres", range: `${MIN_DIM_FT * 30.48} – ${MAX_DIM_FT * 30.48}` },
+  { label: "Metres", range: `${(MIN_DIM_FT * 0.3048).toFixed(2)} – ${(MAX_DIM_FT * 0.3048).toFixed(2)}` },
+];
 
-export function DimensionsTable({
-  dimensions,
-  availableSizes,
-  className,
-}: DimensionsTableProps) {
-  const rows = SIZE_ORDER.filter((s) => availableSizes.includes(s))
-    .map((size) => ({ size, dims: dimensions[size] }))
-    .filter((row): row is { size: ProductSize; dims: { w_cm: number; h_cm: number } } =>
-      row.dims !== undefined,
-    );
-
-  if (rows.length === 0) return null;
-
+export function DimensionsTable({ className }: DimensionsTableProps) {
   return (
     <div className={cn("overflow-hidden rounded-2xl border border-border", className)}>
+      <div className="border-b border-border/70 bg-muted/40 px-4 py-3 text-sm">
+        <p className="font-medium">Custom width × height</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Enter any width and height per side within the range below.
+          {SHOW_PRICE ? " Final price is calculated per square foot." : null}
+        </p>
+      </div>
       <table className="w-full text-sm">
-        <thead className="bg-muted/40">
+        <thead className="bg-muted/20">
           <tr className="text-left">
-            <th scope="col" className="px-4 py-3 font-medium">Size</th>
-            <th scope="col" className="px-4 py-3 font-medium">Width</th>
-            <th scope="col" className="px-4 py-3 font-medium">Height</th>
+            <th scope="col" className="px-4 py-3 font-medium">Unit</th>
+            <th scope="col" className="px-4 py-3 font-medium">Range (each side)</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ size, dims }, i) => (
+          {UNITS.map((u, i) => (
             <tr
-              key={size}
-              className={cn(
-                "border-t border-border/70",
-                i % 2 === 1 && "bg-muted/20",
-              )}
+              key={u.label}
+              className={cn("border-t border-border/70", i % 2 === 1 && "bg-muted/20")}
             >
-              <td className="px-4 py-3 font-medium">
-                {SIZE_LABEL[size]}
-                <span className="ml-1 text-xs uppercase text-muted-foreground">
-                  ({size})
-                </span>
-              </td>
-              <td className="px-4 py-3 text-muted-foreground">{dims.w_cm} cm</td>
-              <td className="px-4 py-3 text-muted-foreground">{dims.h_cm} cm</td>
+              <td className="px-4 py-3 font-medium">{u.label}</td>
+              <td className="px-4 py-3 text-muted-foreground">{u.range}</td>
             </tr>
           ))}
         </tbody>

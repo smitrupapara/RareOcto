@@ -7,8 +7,8 @@ Cross-cutting concerns: the hand-written database type envelope (`types/database
 Hand-written until we run `supabase gen types typescript`. **Single source of truth for TypeScript** consumed by `createClient<Database>` in [[lib-supabase]].
 
 ### What it contains
-- **Enum unions**: `ProductSize`, `ProductMaterial`, `Category`, `Room`, `ColorPalette`, `PatternType`, `StyleTheme`, `OrderStatus`, `Role`
-- **Row types**: `Profile`, `Product`, `SavedPreview`, `CartItem`, `Favorite`, `Review`, `Order`, plus helper types `Address`, `OrderLineItem`, `ProductDimensions`, `MaterialPriceModifier`
+- **Enum unions**: `DimensionUnit`, `ProductMaterial`, `Category`, `Room`, `ColorPalette`, `PatternType`, `StyleTheme`, `OrderStatus`, `Role`
+- **Row types**: `Profile`, `Product`, `SavedPreview`, `CartItem`, `Favorite`, `Review`, `Order`, plus helper types `Address`, `OrderLineItem`, `MaterialPriceModifier`. `CartItem` and `OrderLineItem` carry `{ width, height, unit }` (customer-entered) instead of a fixed size column
 - **Supabase-shaped envelope**: `Database = { public: { Tables: {...}, Views, Functions, Enums } }` — the shape `@supabase/ssr` expects so `.from("products").select()` types fields correctly
 
 ### Per-table `Insert` vs `Update`

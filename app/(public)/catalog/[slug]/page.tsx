@@ -102,7 +102,6 @@ export default async function ProductDetailPage({ params }: RouteProps) {
             productId={product.id}
             basePrice={product.base_price}
             stock={product.stock}
-            availableSizes={product.available_sizes}
             availableMaterials={product.available_materials}
             materialPriceModifier={product.material_price_modifier}
             isAuthed={isAuthed}
@@ -135,10 +134,7 @@ export default async function ProductDetailPage({ params }: RouteProps) {
             Dimensions
           </h2>
           <div className="mt-4">
-            <DimensionsTable
-              dimensions={product.dimensions}
-              availableSizes={product.available_sizes}
-            />
+            <DimensionsTable />
           </div>
         </aside>
       </section>

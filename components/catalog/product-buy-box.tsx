@@ -5,20 +5,28 @@ import { useRouter, usePathname } from "next/navigation";
 import { Minus, Plus, ShoppingCart, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { formatPaiseToINR } from "@/lib/catalog/format";
+import { SHOW_PRICE, formatPaiseToINR, priceForDimensions, toCm } from "@/lib/catalog/format";
+import {
+  DIMENSION_UNIT_VALUES,
+  MAX_DIM_CM,
+  MAX_DIM_FT,
+  MIN_DIM_CM,
+  MIN_DIM_FT,
+} from "@/lib/catalog/search";
 import { addToCartAction } from "@/app/(public)/catalog/[slug]/actions";
 import type {
+  DimensionUnit,
   MaterialPriceModifier,
   ProductMaterial,
-  ProductSize,
 } from "@/types/database";
-
-const SIZE_LABEL: Record<ProductSize, string> = {
-  S: "Small",
-  M: "Medium",
-  L: "Large",
-};
 
 const MATERIAL_LABEL: Record<ProductMaterial, string> = {
   "matte-vinyl": "Matte vinyl",
@@ -27,11 +35,17 @@ const MATERIAL_LABEL: Record<ProductMaterial, string> = {
   "magnetic-base": "Magnetic base",
 };
 
+const UNIT_LABEL: Record<DimensionUnit, string> = {
+  cm: "cm",
+  inch: "inch",
+  feet: "feet",
+  meter: "meter",
+};
+
 type ProductBuyBoxProps = {
   productId: string;
   basePrice: number;
   stock: number;
-  availableSizes: ProductSize[];
   availableMaterials: ProductMaterial[];
   materialPriceModifier: MaterialPriceModifier;
   isAuthed: boolean;
@@ -39,12 +53,14 @@ type ProductBuyBoxProps = {
 };
 
 const MAX_QTY = 5;
+const DEFAULT_UNIT: DimensionUnit = "feet";
+const DEFAULT_WIDTH = 3;
+const DEFAULT_HEIGHT = 4;
 
 export function ProductBuyBox({
   productId,
   basePrice,
   stock,
-  availableSizes,
   availableMaterials,
   materialPriceModifier,
   isAuthed,
@@ -52,7 +68,10 @@ export function ProductBuyBox({
 }: ProductBuyBoxProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [size, setSize] = useState<ProductSize | null>(availableSizes[0] ?? null);
+
+  const [widthStr, setWidthStr] = useState<string>(String(DEFAULT_WIDTH));
+  const [heightStr, setHeightStr] = useState<string>(String(DEFAULT_HEIGHT));
+  const [unit, setUnit] = useState<DimensionUnit>(DEFAULT_UNIT);
   const [material, setMaterial] = useState<ProductMaterial | null>(
     availableMaterials[0] ?? null,
   );
@@ -61,17 +80,40 @@ export function ProductBuyBox({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const width = Number.parseFloat(widthStr);
+  const height = Number.parseFloat(heightStr);
+  const widthValid = Number.isFinite(width) && width > 0;
+  const heightValid = Number.isFinite(height) && height > 0;
+
+  const widthCm = widthValid ? toCm(width, unit) : 0;
+  const heightCm = heightValid ? toCm(height, unit) : 0;
+
+  const dimError = useMemo<string | null>(() => {
+    if (!widthValid || !heightValid) {
+      return "Enter both width and height.";
+    }
+    const range = `${MIN_DIM_FT} ft – ${MAX_DIM_FT} ft`;
+    if (widthCm < MIN_DIM_CM || heightCm < MIN_DIM_CM) {
+      return `Each side must be at least ${MIN_DIM_FT} ft (${range}).`;
+    }
+    if (widthCm > MAX_DIM_CM || heightCm > MAX_DIM_CM) {
+      return `Each side can be at most ${MAX_DIM_FT} ft (${range}).`;
+    }
+    return null;
+  }, [widthValid, heightValid, widthCm, heightCm]);
+
   const effectivePrice = useMemo(() => {
-    const modifier = material ? (materialPriceModifier[material] ?? 0) : 0;
-    return basePrice + modifier;
-  }, [basePrice, material, materialPriceModifier]);
+    if (!material || dimError) return null;
+    const modifier = materialPriceModifier[material] ?? 0;
+    return priceForDimensions(basePrice, width, height, unit, modifier);
+  }, [basePrice, material, materialPriceModifier, width, height, unit, dimError]);
 
   const outOfStock = stock <= 0;
   const canAdd =
     !outOfStock &&
     !isPending &&
-    size !== null &&
     material !== null &&
+    dimError === null &&
     qty >= 1 &&
     qty <= MAX_QTY;
 
@@ -82,12 +124,14 @@ export function ProductBuyBox({
       router.push(`/login?next=${encodeURIComponent(target)}`);
       return;
     }
-    if (!canAdd || !size || !material) return;
+    if (!canAdd || !material) return;
 
     startTransition(async () => {
       const result = await addToCartAction({
         productId,
-        size,
+        width,
+        height,
+        unit,
         material,
         quantity: qty,
       });
@@ -102,47 +146,92 @@ export function ProductBuyBox({
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
-      <div>
-        <p className="font-mono text-xs uppercase tracking-[0.32em] text-muted-foreground">
-          price
-        </p>
-        <p className="mt-1 font-display text-3xl font-bold tracking-tight">
-          {formatPaiseToINR(effectivePrice)}
-        </p>
-        {material && (materialPriceModifier[material] ?? 0) !== 0 ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            Includes {MATERIAL_LABEL[material].toLowerCase()} premium
+      {SHOW_PRICE ? (
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.32em] text-muted-foreground">
+            price
           </p>
-        ) : null}
-      </div>
+          <p className="mt-1 font-display text-3xl font-bold tracking-tight">
+            {effectivePrice !== null ? formatPaiseToINR(effectivePrice) : "—"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatPaiseToINR(basePrice)} per sq ft
+            {material && (materialPriceModifier[material] ?? 0) !== 0
+              ? ` · includes ${MATERIAL_LABEL[material].toLowerCase()} premium`
+              : null}
+          </p>
+        </div>
+      ) : null}
 
       <div>
         <div className="mb-2 flex items-center justify-between">
           <p className="font-mono text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            size
+            dimensions
           </p>
-          {size ? (
-            <p className="text-xs text-muted-foreground">{SIZE_LABEL[size]}</p>
-          ) : null}
+          <p className="text-xs text-muted-foreground">
+            Range: {MIN_DIM_FT} ft – {MAX_DIM_FT} ft
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {availableSizes.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={s === size}
-              onClick={() => setSize(s)}
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Width</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              value={widthStr}
+              onChange={(e) => setWidthStr(e.target.value)}
               className={cn(
-                "h-11 min-w-14 rounded-full border px-4 text-sm font-medium transition",
-                s === size
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border hover:border-foreground/40",
+                "h-11 w-24 rounded-full border border-border bg-background px-4 text-sm font-medium",
+                "focus-visible:border-coral focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40",
               )}
+              aria-label="Width"
+            />
+          </label>
+          <span aria-hidden="true" className="mt-5 text-muted-foreground">
+            ×
+          </span>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Height</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              value={heightStr}
+              onChange={(e) => setHeightStr(e.target.value)}
+              className={cn(
+                "h-11 w-24 rounded-full border border-border bg-background px-4 text-sm font-medium",
+                "focus-visible:border-coral focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40",
+              )}
+              aria-label="Height"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Unit</span>
+            <Select<DimensionUnit>
+              value={unit}
+              onValueChange={(next) => setUnit(next)}
             >
-              {s}
-            </button>
-          ))}
+              <SelectTrigger aria-label="Unit" className="w-32">
+                <SelectValue>{UNIT_LABEL[unit]}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {DIMENSION_UNIT_VALUES.map((u) => (
+                  <SelectItem key={u} value={u}>
+                    {UNIT_LABEL[u]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
         </div>
+        {dimError ? (
+          <p role="alert" className="mt-2 text-xs text-destructive">
+            {dimError}
+          </p>
+        ) : null}
       </div>
 
       <div>
@@ -166,7 +255,7 @@ export function ProductBuyBox({
                 )}
               >
                 {MATERIAL_LABEL[m]}
-                {modifier > 0 ? (
+                {SHOW_PRICE && modifier > 0 ? (
                   <span className="ml-1.5 text-xs opacity-70">
                     +{formatPaiseToINR(modifier)}
                   </span>

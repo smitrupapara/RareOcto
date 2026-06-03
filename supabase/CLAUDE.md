@@ -13,8 +13,9 @@ Database schema, RLS policies, search_tsv FTS setup, and the RPC workarounds for
 | `0005_more_rooms.sql` | Adds 8 commercial / office room values to `room_type` |
 | `0006_more_filters.sql` | Adds `category` values `3d` + `illustration`; six new `pattern_type` values; `egyptian` `style_theme` |
 | `0007_related_products_rpc.sql` | Defines `public.get_related_products(p_product_id, p_category, p_limit)` SQL function — workaround for PostgREST enum-array operator inference (see Gotchas) |
+| `0008_drop_sizes_use_dimensions.sql` | Replaces fixed S/M/L sizing with customer-entered `width × height + unit`. Drops `products.available_sizes`, `products.dimensions`, `cart_items.size`; drops `product_size` enum; adds `dimension_unit` enum (`cm | inch | feet | meter`); adds `cart_items.width / height / unit` (numeric / numeric / dimension_unit); replaces unique constraint with `(user_id, product_id, material, width, height, unit)`. `products.base_price` is now paise **per square foot** (not per piece) |
 
-Run order is **strict** — 0004 alters the column type that 0002 created, 0005/0006 extend enums introduced in 0004, 0007 depends on the `category[]` column from 0004.
+Run order is **strict** — 0004 alters the column type that 0002 created, 0005/0006 extend enums introduced in 0004, 0007 depends on the `category[]` column from 0004, 0008 drops the `size` column and enum introduced in 0001/0002.
 
 ## Tables
 
@@ -27,11 +28,10 @@ Run order is **strict** — 0004 alters the column type that 0002 created, 0005/
 ### `products`
 - `id uuid pk`, `slug text unique`, `name`, `description`
 - `category public.category[]` (was scalar in 0002, converted in 0004)
-- `base_price integer >= 0` — **paise**, never rupees
+- `base_price integer >= 0` — **paise per square foot** since 0008 (was paise per piece); final unit price computed at read time
 - `images text[]` — Cloudinary public ids, in display order; `images[0]` is the cover
-- `available_sizes public.product_size[]`, `available_materials public.product_material[]`
-- `material_price_modifier jsonb` — `{"fabric-texture": 200}` shape, paise per material
-- `dimensions jsonb` — `{"S":{"w_cm":60,"h_cm":90},...}`
+- `available_materials public.product_material[]` (the matching `available_sizes` column was dropped in 0008)
+- `material_price_modifier jsonb` — `{"fabric-texture": 200}` shape, paise per material (flat additive, NOT multiplied by area)
 - `rooms`, `colors`, `patterns`, `styles` — array enum columns added in 0004
 - `tags text[]`, `stock integer >= 0`, `meta_title`, `meta_description`
 - `search_tsv tsvector` — maintained by `products_search_tsv_update` trigger
@@ -39,7 +39,8 @@ Run order is **strict** — 0004 alters the column type that 0002 created, 0005/
 - **RLS**: select public; insert/update/delete only for admins (`profiles.role = 'admin'` exists check)
 
 ### `cart_items`
-- Unique `(user_id, product_id, size, material)` — adding the same SKU twice updates quantity instead
+- Unique `(user_id, product_id, material, width, height, unit)` since 0008 — adding the same product with the same material + dimensions + unit updates quantity instead. Different units count as different rows (e.g. `90cm × 120cm` and `3ft × 4ft` are stored separately; consumers convert on read)
+- `width numeric > 0`, `height numeric > 0`, `unit public.dimension_unit` — per-side bounds are enforced in app code, NOT in DB (global `[MIN_DIM_FT, MAX_DIM_FT]` via `lib/catalog/format.toCm`)
 - `quantity > 0` check
 - RLS: full CRUD on own rows
 
@@ -62,7 +63,7 @@ Run order is **strict** — 0004 alters the column type that 0002 created, 0005/
 | Enum | Values |
 |------|--------|
 | `role` | `user`, `admin` |
-| `product_size` | `S`, `M`, `L` |
+| `dimension_unit` | `cm`, `inch`, `feet`, `meter` (added in 0008; replaces `product_size`) |
 | `category` | `abstract`, `botanical`, `geometric`, `mural`, `kids`, `minimal`, `3d`, `illustration` |
 | `product_material` | `matte-vinyl`, `glossy-vinyl`, `fabric-texture`, `magnetic-base` |
 | `room_type` | 26 values (home + commercial + kids + feature walls) — see `0004` + `0005` |
@@ -113,7 +114,7 @@ public.get_related_products(
 - **Adding enum values requires `alter type ... add value if not exists ...`** in its own migration (Postgres can't add values to an enum inside a transaction with other statements that use the new value). 0005 and 0006 follow this pattern
 - **`profiles.role` is the only admin signal** — there is no separate `admin_users` table or JWT claim. Demoting a user is a single `update profiles set role = 'user'`
 - **Cascade deletes on `auth.users`** wipe profile, cart_items, favorites, reviews — orders intentionally do NOT cascade (need to retain for accounting). If you add a new user-owned table, decide cascade explicitly
-- **`unique (user_id, product_id, size, material)` on cart_items** — `addToCartAction` must either upsert (`onConflict`) or fetch-then-update. Plain insert with the same SKU will 409
+- **`unique (user_id, product_id, material, width, height, unit)` on cart_items** — `addToCartAction` must either upsert (`onConflict`) or fetch-then-update. Plain insert with the same SKU + dimensions will 409. Different units for the same physical size (e.g. `90cm × 120cm` vs `3ft × 4ft`) count as **distinct rows** — store-as-typed by design
 - **`stock` is not decremented anywhere yet** — the column is `>= 0` but checkout logic that decrements it doesn't exist. Add this before live orders or oversells will happen
 
 ## Related

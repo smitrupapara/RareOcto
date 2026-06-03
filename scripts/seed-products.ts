@@ -9,26 +9,50 @@
  *   SUPABASE_SERVICE_ROLE_KEY  — service-role key bypasses RLS; never expose
  *
  * CSV columns (header row required, see products-template.csv):
- *   slug, name, description, category, base_price, sizes, materials,
+ *   slug, name, description, category, base_price, materials,
  *   rooms, colors, patterns, styles,
- *   material_modifiers_json, dimensions_json, tags, stock, image_count,
+ *   material_modifiers_json, tags, stock, image_count,
  *   meta_title, meta_description
  *
- *   - category/sizes/materials/rooms/colors/patterns/styles/tags are
- *     pipe-separated (`S|M|L`). category requires at least one value.
+ *   - category/materials/rooms/colors/patterns/styles/tags are
+ *     pipe-separated. category requires at least one value.
  *     rooms/colors/patterns/styles are optional (empty allowed).
- *   - *_json columns are inline JSON strings
+ *   - material_modifiers_json is an inline JSON string
  *   - image_count is the number of images in `rareocto/products/<slug>/`;
  *     resolves to `['rareocto/products/<slug>/01', ..., '<NN>']`
- *   - base_price is in paise (i.e. ₹2499.00 → 249900)
+ *   - base_price is paise PER SQUARE FOOT (e.g. ₹150/sqft → 15000).
+ *     Final unit price = round(area_sqft × base_price) + material modifier.
  *
+ * 
+ * 
+ * run  npm run seed scripts/products.csv
+ * 
+ * 
+ * 
  * The script upserts on `slug` so re-runs update existing rows in place.
  */
 
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { createClient } from "@supabase/supabase-js";
+
+// Load .env.local when running standalone outside Next.js (tsx doesn't do this).
+try {
+  const raw = readFileSync(".env.local", "utf8");
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+    if (!(key in process.env)) process.env[key] = val;
+  }
+} catch {
+  // .env.local not present — env vars must be set externally
+}
 
 import type {
   Category,
@@ -36,9 +60,7 @@ import type {
   Database,
   MaterialPriceModifier,
   PatternType,
-  ProductDimensions,
   ProductMaterial,
-  ProductSize,
   Room,
   StyleTheme,
 } from "../types/database";
@@ -48,7 +70,6 @@ import {
   MATERIAL_VALUES,
   PATTERN_VALUES,
   ROOM_VALUES,
-  SIZE_VALUES,
   STYLE_VALUES,
 } from "../lib/catalog/search";
 
@@ -61,14 +82,12 @@ type ProductInsert = {
   category: Category[];
   base_price: number;
   images: string[];
-  available_sizes: ProductSize[];
   available_materials: ProductMaterial[];
   rooms: Room[];
   colors: ColorPalette[];
   patterns: PatternType[];
   styles: StyleTheme[];
   material_price_modifier: MaterialPriceModifier;
-  dimensions: ProductDimensions;
   tags: string[];
   stock: number;
   meta_title: string | null;
@@ -187,13 +206,6 @@ function rowToProduct(row: CsvRow): ProductInsert {
     fail(`row ${slug}: at least one category is required`);
   }
 
-  const sizes = splitPipe(row.sizes).map((s) => {
-    if (!SIZE_VALUES.includes(s as ProductSize)) {
-      fail(`row ${slug}: size "${s}" must be one of ${SIZE_VALUES.join(", ")}`);
-    }
-    return s as ProductSize;
-  });
-
   const materials = splitPipe(row.materials).map((m) => {
     if (!MATERIAL_VALUES.includes(m as ProductMaterial)) {
       fail(
@@ -245,7 +257,6 @@ function rowToProduct(row: CsvRow): ProductInsert {
     category: categories,
     base_price: basePrice,
     images: buildImageIds(slug, imageCount),
-    available_sizes: sizes,
     available_materials: materials,
     rooms,
     colors,
@@ -255,12 +266,6 @@ function rowToProduct(row: CsvRow): ProductInsert {
       row.material_modifiers_json,
       {},
       "material_modifiers_json",
-      slug,
-    ),
-    dimensions: parseJsonField<ProductDimensions>(
-      row.dimensions_json,
-      {},
-      "dimensions_json",
       slug,
     ),
     tags: splitPipe(row.tags),

@@ -36,17 +36,16 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const end = Math.min(page * PAGE_SIZE, total);
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-6 py-12 md:py-16">
-      <header className="mb-10 max-w-2xl">
+    <main className="mx-auto w-full max-w-7xl px-6 py-6 md:py-8">
+      <header className="mb-6 max-w-2xl">
         <p className="font-mono text-xs uppercase tracking-[0.32em] text-muted-foreground">
           catalog
         </p>
-        <h1 className="mt-3 font-display text-[clamp(2.5rem,7vw,4.5rem)] font-bold leading-[0.95] tracking-[-0.025em]">
+        <h1 className="mt-2 font-display text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.025em]">
           Every wall, on demand.
         </h1>
-        <p className="mt-4 text-pretty text-muted-foreground sm:text-lg">
-          Magnetic wallpaper art that peels, snaps, and swaps. Curated in
-          Bengaluru, shipped India-wide.
+        <p className="mt-2 text-pretty text-sm text-muted-foreground">
+          Magnetic wallpaper art that peels, snaps, and swaps.
         </p>
       </header>
 

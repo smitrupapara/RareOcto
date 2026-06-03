@@ -3,7 +3,7 @@
  * Mirrors the schema in CLAUDE.md / migrations.
  */
 
-export type ProductSize = "S" | "M" | "L";
+export type DimensionUnit = "cm" | "inch" | "feet" | "meter";
 export type ProductMaterial =
   | "matte-vinyl"
   | "glossy-vinyl"
@@ -118,9 +118,14 @@ export type Profile = {
   created_at: string;
 };
 
-export type ProductDimensions = Partial<Record<ProductSize, { w_cm: number; h_cm: number }>>;
 export type MaterialPriceModifier = Partial<Record<ProductMaterial, number>>;
 
+/**
+ * `base_price` is **paise per square foot**. Final unit price for a cart row:
+ *   round(area_sqft * base_price) + (material_price_modifier[material] ?? 0)
+ * Customers choose `width × height` in the unit of their choice on the PDP —
+ * the product itself no longer carries fixed sizes or canonical dimensions.
+ */
 export type Product = {
   id: string;
   slug: string;
@@ -133,10 +138,8 @@ export type Product = {
   styles: StyleTheme[];
   base_price: number;
   images: string[];
-  available_sizes: ProductSize[];
   available_materials: ProductMaterial[];
   material_price_modifier: MaterialPriceModifier;
-  dimensions: ProductDimensions;
   tags: string[];
   stock: number;
   meta_title: string | null;
@@ -157,8 +160,12 @@ export type CartItem = {
   id: string;
   user_id: string;
   product_id: string;
-  size: ProductSize;
   material: ProductMaterial;
+  /** Width as the customer typed it (in `unit`). */
+  width: number;
+  /** Height as the customer typed it (in `unit`). */
+  height: number;
+  unit: DimensionUnit;
   quantity: number;
   created_at: string;
 };
@@ -195,8 +202,10 @@ export type OrderLineItem = {
   product_id: string;
   slug: string;
   name: string;
-  size: ProductSize;
   material: ProductMaterial;
+  width: number;
+  height: number;
+  unit: DimensionUnit;
   unit_price: number;
   quantity: number;
 };
@@ -266,7 +275,7 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
     Enums: {
-      product_size: ProductSize;
+      dimension_unit: DimensionUnit;
       product_material: ProductMaterial;
       category: Category;
       room_type: Room;

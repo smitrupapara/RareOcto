@@ -81,9 +81,9 @@ export function SiteNav({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-transparent transition-[background,backdrop-filter,border-color] duration-300",
+        "sticky top-0 z-50 w-full border-b border-border/60 transition-[background,backdrop-filter,border-color] duration-300",
         scrolled &&
-          "border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
+          "bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-20 lg:px-8">

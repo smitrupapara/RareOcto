@@ -13,7 +13,9 @@ type ProductJsonLdProps = {
 export function ProductJsonLd({ product, aggregate }: ProductJsonLdProps) {
   const url = `${SITE_URL}/catalog/${product.slug}`;
   const images = product.images.slice(0, 6).map((id) => og(id));
-  const priceRupees = (product.base_price / 100).toFixed(2);
+  // `base_price` is paise per sq ft. The minimum order is 1×1 ft = 1 sq ft, so the
+  // starting price (in rupees) equals base_price / 100.
+  const startingPriceRupees = (product.base_price / 100).toFixed(2);
   const primaryCategory = product.category[0];
 
   const json: Record<string, unknown> = {
@@ -27,10 +29,10 @@ export function ProductJsonLd({ product, aggregate }: ProductJsonLdProps) {
     url,
     category: product.category.join(", "),
     offers: {
-      "@type": "Offer",
+      "@type": "AggregateOffer",
       url,
       priceCurrency: "INR",
-      price: priceRupees,
+      lowPrice: startingPriceRupees,
       availability:
         product.stock > 0
           ? "https://schema.org/InStock"

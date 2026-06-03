@@ -7,6 +7,7 @@ import {
   type CatalogFilters,
   PAGE_SIZE,
 } from "@/lib/catalog/search";
+import { priceForDimensions } from "@/lib/catalog/format";
 
 export type ListProductsResult = {
   products: Product[];
@@ -38,9 +39,6 @@ export async function listProducts(filters: CatalogFilters): Promise<ListProduct
   }
   if (filters.material) {
     query = query.contains("available_materials", [filters.material]);
-  }
-  if (filters.size) {
-    query = query.contains("available_sizes", [filters.size]);
   }
   if (filters.room) {
     query = query.contains("rooms", [filters.room]);
@@ -299,7 +297,13 @@ export async function getCartForUser(
     const product = byId.get(item.product_id);
     if (!product) continue;
     const modifier = product.material_price_modifier[item.material] ?? 0;
-    const unitPrice = product.base_price + modifier;
+    const unitPrice = priceForDimensions(
+      product.base_price,
+      item.width,
+      item.height,
+      item.unit,
+      modifier,
+    );
     const lineTotal = unitPrice * item.quantity;
     subtotal += lineTotal;
     lines.push({ item, product, unitPrice, lineTotal });

@@ -21,6 +21,8 @@
  * Note: `cloudinary` is not in package.json by default — install it as a
  * dev dep before running:
  *   npm install -D cloudinary tsx
+ * 
+ *  npm run upload:images ./images
  */
 
 import { readdir, stat } from "node:fs/promises";

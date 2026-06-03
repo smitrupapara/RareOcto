@@ -7,7 +7,7 @@ const PROTECTED = ["/account", "/onboarding", "/try-on", "/cart", "/admin"];
 const AUTH_ONLY = ["/login"];
 const ADMIN_ONLY = ["/admin"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Expose the current path to server components via headers() so requireUser()

@@ -7,7 +7,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cloudinaryLoader } from "@/lib/cloudinary/loader";
-import { formatPaiseToINR } from "@/lib/catalog/format";
+import { SHOW_PRICE, formatDimensions, formatPaiseToINR } from "@/lib/catalog/format";
 import {
   removeFromCartAction,
   updateCartQuantityAction,
@@ -16,14 +16,8 @@ import type {
   CartItem,
   Product,
   ProductMaterial,
-  ProductSize,
 } from "@/types/database";
 
-const SIZE_LABEL: Record<ProductSize, string> = {
-  S: "Small",
-  M: "Medium",
-  L: "Large",
-};
 const MATERIAL_LABEL: Record<ProductMaterial, string> = {
   "matte-vinyl": "Matte vinyl",
   "glossy-vinyl": "Glossy vinyl",
@@ -91,15 +85,19 @@ export function CartLineItem({
               {product.name}
             </Link>
             <p className="mt-1 text-xs text-muted-foreground">
-              {SIZE_LABEL[item.size]} · {MATERIAL_LABEL[item.material]}
+              {formatDimensions(item.width, item.height, item.unit)} · {MATERIAL_LABEL[item.material]}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {formatPaiseToINR(unitPrice)} each
-            </p>
+            {SHOW_PRICE ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {formatPaiseToINR(unitPrice)} each
+              </p>
+            ) : null}
           </div>
-          <p className="font-medium tabular-nums">
-            {formatPaiseToINR(lineTotal)}
-          </p>
+          {SHOW_PRICE ? (
+            <p className="font-medium tabular-nums">
+              {formatPaiseToINR(lineTotal)}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-3">

@@ -7,7 +7,8 @@ Three modules: `queries.ts` (data access), `search.ts` (URL ↔ filter ↔ searc
 ### Constants
 - `PAGE_SIZE = 24` — used for both query `range()` and pagination math. Don't redefine elsewhere
 - `SORT_KEYS: SortKey[]` — `relevance | new | price_asc | price_desc`. Default sort is `"new"` (newest first)
-- `CATEGORY_VALUES`, `MATERIAL_VALUES`, `SIZE_VALUES`, `ROOM_VALUES`, `COLOR_VALUES`, `PATTERN_VALUES`, `STYLE_VALUES` — **single source of truth** for enum values. Filter dropdowns, validation, and seed scripts should import these instead of hard-coding strings. They must stay in sync with the Postgres enums in `supabase/migrations/0001_init.sql` / `0004_catalog_filters.sql`
+- `CATEGORY_VALUES`, `MATERIAL_VALUES`, `DIMENSION_UNIT_VALUES`, `ROOM_VALUES`, `COLOR_VALUES`, `PATTERN_VALUES`, `STYLE_VALUES` — **single source of truth** for enum values. Filter dropdowns, validation, and seed scripts should import these instead of hard-coding strings. They must stay in sync with the Postgres enums in `supabase/migrations/0001_init.sql` / `0004_catalog_filters.sql` / `0008_drop_sizes_use_dimensions.sql`
+- `MIN_DIM_FT = 1`, `MAX_DIM_FT = 30`, `MIN_DIM_CM`, `MAX_DIM_CM` — global per-side range for customer-entered dimensions. Width and height each must land in `[MIN_DIM_CM, MAX_DIM_CM]` after unit conversion. Enforced on the client (input validation) AND in the server action (`addToCartAction`). No per-product columns
 
 ### `parseCatalogFilters(searchParams)` → `CatalogFilters`
 - Reads Next.js `searchParams` (string | string[] | undefined per key), returns a strongly-typed filter object
@@ -73,15 +74,31 @@ All exports are `async`, all gate behind `createSupabaseServerClient()`. Top of 
 
 ### `getCartForUser(userId)` → `{ lines: CartLine[], subtotal }`
 - Two-query pattern: cart_items + `.in("id", productIds)` for products
-- Computes `unitPrice = base_price + material_price_modifier[item.material]`
+- Computes `unitPrice = priceForDimensions(product.base_price, item.width, item.height, item.unit, materialModifier)` — area-based, paid per square foot
 - Skips orphan items (deleted product) silently — does NOT raise
 - `subtotal` and `lineTotal` are in **paise**, not rupees
 
-## format.ts — Display formatting
+## format.ts — Display formatting + dimension math
 
 ### `formatPaiseToINR(paise)` → string
 - Divides paise by 100 (with `Math.round` for safety), formats via `Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })`
 - Returns e.g. `"₹1,299"`. Always use this — never `${price/100}₹`
+
+### `toCm(value, unit)` → number
+- Unit conversion to centimetres for `DimensionUnit` (`cm | inch | feet | meter`)
+- Constants: 1 inch = 2.54 cm, 1 foot = 30.48 cm, 1 m = 100 cm
+
+### `toSqFt(width, height, unit)` → number
+- Converts both sides to cm via `toCm`, multiplies, then divides by `929.0304` (1 sq ft = 929.0304 sq cm)
+
+### `priceForDimensions(basePricePaise, width, height, unit, materialModifierPaise = 0)` → number
+- **Per-square-foot pricing math**: `Math.round(area_sqft × base_price_paise) + material_modifier_paise`
+- Result in paise. `base_price` is paise per sq ft (not per piece)
+- Material modifier is a flat additive in paise — NOT multiplied by area
+
+### `formatDimensions(width, height, unit)` → string
+- Display helper used in cart line items and order receipts: e.g. `"3 × 4 ft"`
+- Renders the raw user-entered values + a unit suffix; does NOT convert
 
 ## Gotchas
 - **Prices are stored as paise (integer)** — never `Decimal`, never `float`. Multiply by 100 on input, divide on display

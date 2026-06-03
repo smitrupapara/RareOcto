@@ -38,7 +38,7 @@ Consumers live mostly under `app/(public)/catalog/*`.
 
 ### product-card.tsx (client)
 - Cover image (`images[0]`) via `cloudinaryLoader` + `priority` prop forwarded for LCP
-- "From ₹X" price label using `formatPaiseToINR(base_price)` — material modifiers are not added here
+- "From ₹X / sq ft" price label using `formatPaiseToINR(base_price)` — `base_price` is paise per sq ft, so this is the starting rate not a fixed item price
 - Category badge (first category label) sits top-left over the image
 - Hover: scale image + coral border on card
 - FavoriteToggle absolutely-positioned top-right with `size="icon-sm"` and the user's `isAuthed` flag
@@ -52,19 +52,21 @@ Consumers live mostly under `app/(public)/catalog/*`.
 - No keyboard arrow navigation today — keep that in mind before extending
 
 ### product-buy-box.tsx (client)
-- Owns size / material / quantity selection for one product
+- Owns width / height / unit / material / quantity selection for one product
 - **`MAX_QTY = 5`** — input clamped to `[1, 5]`; "+" disabled at 5
-- `effectivePrice = basePrice + (materialPriceModifier[material] ?? 0)` — recomputed whenever size/material changes. Always in paise; formatted via `formatPaiseToINR`
+- Width and height are typed inputs (string state for typing UX), unit is a `<Select<DimensionUnit>>` (cm / inch / feet / meter). Defaults: 3 × 4 ft
+- `dimError` useMemo validates each side against `[MIN_DIM_CM, MAX_DIM_CM]` via `toCm`; surfaced inline and blocks "Add to cart"
+- `effectivePrice = priceForDimensions(basePrice, width, height, unit, materialPriceModifier[material] ?? 0)` — recomputed whenever any dimension input or material changes. Always in paise; formatted via `formatPaiseToINR`
+- Header price renders as `"{formatPaiseToINR(basePrice)} per sq ft"`; effective unit price + line total render below
 - Auth-gates the "Add to cart" button via `<AuthGatedButton isAuthed={...} onAction={addToCart} next={pathname}>` (see [[components-auth]])
-- `addToCart` calls `addToCartAction({ productId, size, material, quantity })` inside `useTransition`
+- `addToCart` calls `addToCartAction({ productId, width, height, unit, material, quantity })` inside `useTransition`
 - Shows a transient **"Added to cart"** confirmation for **1800ms** then reverts the button label
 - Out-of-stock state disables every interactive control and replaces CTA with "Out of stock"
 
 ### dimensions-table.tsx (server)
-- Renders the size table for a product
-- `SIZE_LABEL = { S: "Small", M: "Medium", L: "Large" }` — keep these labels in sync with [[lib-catalog]] enums
-- Only renders rows where `availableSizes` intersects with the product's `dimensions` map (skips sizes that don't ship)
-- Striped rows via `even:bg-neutral-50` — pure presentation
+- **Prop-less range info panel** — only takes optional `className`. Same component on every PDP since the allowed range is global
+- Renders a 2-column table listing the allowed per-side range in Feet / Inches / Centimetres / Metres, derived from `MIN_DIM_FT` / `MAX_DIM_FT` in [[lib-catalog]]
+- Sits in the "Dimensions" sidebar on the PDP next to the product description; the actual width/height/unit inputs live in `product-buy-box.tsx`
 
 ### review-summary.tsx (server)
 - Top of PDP — average rating, count, and 1–5 distribution bars
@@ -94,7 +96,7 @@ Consumers live mostly under `app/(public)/catalog/*`.
 - Injects `<script type="application/ld+json">` for **two schemas**: `Product` and `BreadcrumbList` (see schema.org docs)
 - `SITE_URL = process.env.NEXT_PUBLIC_SITE_URL` with trailing `/` stripped — required for canonical URLs and image URLs
 - Image URLs built via `og(publicId)` for each image — **non-`<Image>` context** so we use [[lib-cloudinary]] helpers directly
-- Price exposed in **rupees, not paise** (`price = base_price / 100`) — schema.org expects decimal currency
+- `offers` is an **`AggregateOffer`** with `lowPrice` (rupees, not paise) because price now varies by customer-chosen area. `lowPrice = base_price / 100` works because the minimum 1×1 ft order has `area_sqft = 1`, so the starting unit price (in rupees) equals `base_price / 100`
 - `aggregateRating` field only included when `reviewCount > 0` — Google flags Product entries with zero reviews if they declare `aggregateRating`
 
 ### breadcrumbs.tsx (server)
@@ -113,7 +115,8 @@ Consumers live mostly under `app/(public)/catalog/*`.
 - "View cart" link to `/cart` for full checkout flow
 
 ### cart-line-item.tsx (client)
-- One row per line — image, name, size/material, qty controls, line total, remove
+- One row per line — image, name, `formatDimensions(width, height, unit) · MATERIAL_LABEL[material]`, qty controls, line total, remove
+- Displays dimensions in the **unit the customer originally typed** — no conversion. A `90cm × 120cm` line stays in cm; a `3ft × 4ft` line stays in feet
 - Qty `+ / −` buttons clamp to `[1, 5]` (same MAX_QTY as ProductBuyBox); disabled at bounds
 - `+ / −` and quantity input call `updateCartQuantityAction({ lineId, quantity })` inside `useTransition`
 - `×` (remove) calls `removeFromCartAction({ lineId })` — no confirm prompt; cart removals are cheap to redo
@@ -133,8 +136,9 @@ Consumers live mostly under `app/(public)/catalog/*`.
 - **AuthGatedButton ALWAYS receives `isAuthed` from server props** — never call `getCurrentUser()` from client. See [[components-auth]]
 - **`priority` only on first 4 ProductCards** in a grid (LCP target). Marking everything `priority` cancels the benefit
 - **Cart and favorites are paise-based** — never divide and re-multiply; use `formatPaiseToINR` at the display boundary only
-- **JSON-LD price is rupees, not paise** — only place we leak the unit conversion to a consumer
+- **JSON-LD price is rupees, not paise** — only place we leak the unit conversion to a consumer. Uses `AggregateOffer.lowPrice` because per-sq-ft pricing has no single fixed price
 - **`MAX_QTY = 5` is duplicated** in ProductBuyBox and CartLineItem. If you raise the cap, change both — and consider promoting it to a shared constant
+- **Dimensions are stored as-typed** — `cart_items.width / height / unit` keep the user's original unit. The unique constraint `(user_id, product_id, material, width, height, unit)` treats different units as different rows even if they're the same physical size. Convert to cm via `toCm` only when comparing against the `[MIN_DIM_CM, MAX_DIM_CM]` bounds or computing area via `priceForDimensions`
 
 ## Related
 - See [[components-auth]] for `AuthGatedButton` consumed by FavoriteToggle / BuyBox / ReviewForm

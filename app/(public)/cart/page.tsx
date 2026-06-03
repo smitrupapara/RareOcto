@@ -5,7 +5,7 @@ import { CartLineItem } from "@/components/catalog/cart-line-item";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { getCartForUser } from "@/lib/catalog/queries";
-import { formatPaiseToINR } from "@/lib/catalog/format";
+import { SHOW_PRICE, formatPaiseToINR } from "@/lib/catalog/format";
 
 export const metadata: Metadata = {
   title: "Your cart — RareOcto",
@@ -70,18 +70,22 @@ export default async function CartPage() {
               order summary
             </p>
             <dl className="mt-4 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Subtotal</dt>
-                <dd className="tabular-nums">{formatPaiseToINR(subtotal)}</dd>
-              </div>
+              {SHOW_PRICE ? (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Subtotal</dt>
+                  <dd className="tabular-nums">{formatPaiseToINR(subtotal)}</dd>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Shipping</dt>
                 <dd className="text-muted-foreground">Calculated at checkout</dd>
               </div>
-              <div className="border-t border-border pt-3 flex justify-between font-display text-lg font-semibold">
-                <dt>Total</dt>
-                <dd className="tabular-nums">{formatPaiseToINR(subtotal)}</dd>
-              </div>
+              {SHOW_PRICE ? (
+                <div className="border-t border-border pt-3 flex justify-between font-display text-lg font-semibold">
+                  <dt>Total</dt>
+                  <dd className="tabular-nums">{formatPaiseToINR(subtotal)}</dd>
+                </div>
+              ) : null}
             </dl>
             <Button
               type="button"

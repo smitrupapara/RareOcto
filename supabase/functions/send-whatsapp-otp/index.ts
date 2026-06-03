@@ -1,3 +1,24 @@
+// send-whatsapp-otp — Supabase "Send SMS Hook" → MSG91 WhatsApp delivery.
+//
+// REQUIRED WhatsApp template config (Meta WhatsApp Manager / MSG91 → Templates).
+// Get this wrong and Meta REJECTS the template; sends then land in MSG91's
+// failed log with reason "Template status is rejected" — no code change fixes it.
+//
+//   Name     : MSG91_TEMPLATE_NAME (e.g. rareocto_login_otp; lowercase + "_" only)
+//   Category : Authentication      <-- NOT Marketing/Utility. This is the #1 cause
+//                                       of rejection. OTP templates MUST be this.
+//   Language : en_US               <-- must EXACTLY match `language.code` below
+//   Body     : "{{1}} is your verification code."  (Meta-fixed, one variable)
+//   Add-ons  : enable "security disclaimer" + "code expires in 10 minutes"
+//   Button   : "Copy code" (OTP/URL button) — the OTP is sent in BOTH body_1
+//              and button_1 below; omitting button_1 makes Meta reject the send.
+//
+// TTL must stay aligned in three places:
+//   - Supabase → Auth → Providers → Phone → OTP Expiry = 600s, OTP Length = 6
+//   - template "expires in" warning = 10 minutes
+//
+// After approval: `supabase functions deploy send-whatsapp-otp`. If the template
+// name/namespace/language changes, update the MSG91_* secrets to match.
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const error = (msg: string, status = 500) =>
@@ -39,11 +60,18 @@ Deno.serve(async (req) => {
           type: "template",
           template: {
             name: Deno.env.get("MSG91_TEMPLATE_NAME"),
-            language: { code: "en", policy: "deterministic" },
+            // Must match the approved template's language exactly (en_US).
+            language: { code: "en_US", policy: "deterministic" },
             namespace: Deno.env.get("MSG91_TEMPLATE_NAMESPACE"),
             to_and_components: [{
               to: [user.phone],
-              components: { body_1: { type: "text", value: sms.otp } },
+              // Authentication-category templates with a "Copy code" button need
+              // the OTP in BOTH the body variable {{1}} and the button component.
+              // Omitting button_1 makes Meta reject the send for a copy-code template.
+              components: {
+                body_1: { type: "text", value: sms.otp },
+                button_1: { subtype: "url", type: "text", value: sms.otp },
+              },
             }],
           },
         },

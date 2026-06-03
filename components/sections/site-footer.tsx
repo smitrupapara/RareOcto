@@ -29,18 +29,18 @@ export function SiteFooter() {
               Company
             </p>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-              <li className="font-medium text-foreground">RareOcto Innovations Pvt. Ltd.</li>
+              <li className="font-medium text-foreground">RareOcto Magnets Pvt. Ltd.</li>
               <li>B-911 Titanium City Center Corporate Offices, 100 Feet Anand Nagar Road</li>
               <li> Prahladnagar, Ahmedabad-380015</li>
               <li>Gujarat, India</li>
               <li className="pt-2">
-                <a href="mailto:hello@rareocto.com" className="hover:text-coral transition-colors">
-                  hello@rareocto.com
+                <a href="mailto:contact@rareocto.com" className="hover:text-coral transition-colors">
+                  contact@rareocto.com
                 </a>
               </li>
               <li>
-                <a href="tel:+919824083085" className="hover:text-coral transition-colors">
-                  +91 98240 83085
+                <a href="tel:+917069399399" className="hover:text-coral transition-colors">
+                  +91 70693 99399
                 </a>
               </li>
             </ul>
@@ -80,7 +80,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-14 flex flex-col gap-4 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} RareOcto Innovations Pvt. Ltd. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} RareOcto Magnets Pvt. Ltd. All rights reserved.</p>
           <p className="font-mono tracking-wide">GST Reg. · Made in India</p>
         </div>
       </div>

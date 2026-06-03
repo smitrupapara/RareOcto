@@ -206,7 +206,7 @@ export function HeroSection() {
 
             {/* Static logo — sits above the orbit, never rotates */}
             <div ref={logoRef} className="absolute left-1/2 top-1/2 grid -translate-x-1/2 -translate-y-1/2 place-items-center">
-              <Logo className="h-44 w-44 drop-shadow-[0_18px_40px_rgba(255,90,55,0.35)] sm:h-56 sm:w-56" />
+              <Logo className="h-44 w-44 drop-shadow-[0_18px_40px_color-mix(in_oklch,var(--coral)_35%,transparent)] sm:h-56 sm:w-56" />
             </div>
           </div>
         </div>

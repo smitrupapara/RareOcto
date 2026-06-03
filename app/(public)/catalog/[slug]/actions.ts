@@ -6,14 +6,21 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  DIMENSION_UNIT_VALUES,
   MATERIAL_VALUES,
-  SIZE_VALUES,
+  MAX_DIM_CM,
+  MAX_DIM_FT,
+  MIN_DIM_CM,
+  MIN_DIM_FT,
 } from "@/lib/catalog/search";
-import type { ProductMaterial, ProductSize } from "@/types/database";
+import { toCm } from "@/lib/catalog/format";
+import type { DimensionUnit, ProductMaterial } from "@/types/database";
 
 const addToCartSchema = z.object({
   productId: z.string().uuid(),
-  size: z.enum(SIZE_VALUES as [string, ...string[]]),
+  width: z.number().finite().positive(),
+  height: z.number().finite().positive(),
+  unit: z.enum(DIMENSION_UNIT_VALUES as [string, ...string[]]),
   material: z.enum(MATERIAL_VALUES as [string, ...string[]]),
   quantity: z.number().int().min(1).max(5),
 });
@@ -29,15 +36,30 @@ export async function addToCartAction(
   if (!parsed.success) {
     return { ok: false, error: "Invalid selection" };
   }
-  const size = parsed.data.size as ProductSize;
+  const unit = parsed.data.unit as DimensionUnit;
   const material = parsed.data.material as ProductMaterial;
+  const { width, height } = parsed.data;
+
+  const widthCm = toCm(width, unit);
+  const heightCm = toCm(height, unit);
+  if (
+    widthCm < MIN_DIM_CM ||
+    heightCm < MIN_DIM_CM ||
+    widthCm > MAX_DIM_CM ||
+    heightCm > MAX_DIM_CM
+  ) {
+    return {
+      ok: false,
+      error: `Each side must be between ${MIN_DIM_FT} ft and ${MAX_DIM_FT} ft.`,
+    };
+  }
 
   const user = await requireUser();
   const supabase = await createSupabaseServerClient();
 
   const { data: product, error: prodErr } = await supabase
     .from("products")
-    .select("id, slug, stock, available_sizes, available_materials")
+    .select("id, slug, stock, available_materials")
     .eq("id", parsed.data.productId)
     .maybeSingle();
   if (prodErr || !product) {
@@ -45,9 +67,6 @@ export async function addToCartAction(
   }
   if (product.stock <= 0) {
     return { ok: false, error: "Out of stock" };
-  }
-  if (!product.available_sizes.includes(size)) {
-    return { ok: false, error: "Size not available" };
   }
   if (!product.available_materials.includes(material)) {
     return { ok: false, error: "Material not available" };
@@ -58,8 +77,10 @@ export async function addToCartAction(
     .select("id, quantity")
     .eq("user_id", user.id)
     .eq("product_id", parsed.data.productId)
-    .eq("size", size)
     .eq("material", material)
+    .eq("width", width)
+    .eq("height", height)
+    .eq("unit", unit)
     .maybeSingle();
 
   if (existing) {
@@ -73,8 +94,10 @@ export async function addToCartAction(
     const { error } = await supabase.from("cart_items").insert({
       user_id: user.id,
       product_id: parsed.data.productId,
-      size,
       material,
+      width,
+      height,
+      unit,
       quantity: parsed.data.quantity,
     });
     if (error) return { ok: false, error: "Could not add to cart" };
