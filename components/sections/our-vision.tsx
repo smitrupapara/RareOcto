@@ -26,7 +26,7 @@ export function OurVision() {
               Our Vision
             </span>
             <h2 className="font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
-              Built in India.
+              Bold by design.
               <br />
               <span style={{ color: "var(--coral)" }}>Built for</span>
               <br />
@@ -37,14 +37,13 @@ export function OurVision() {
           {/* Right — body */}
           <div className="space-y-6 text-lg leading-relaxed text-muted-foreground">
             <p>
-              To build RareOcto as a leading &ldquo;Made in India&rdquo;
-              magnetic solutions brand, driving innovation across industries and
-              everyday applications.
+              To build RareOcto as a leading magnetic solutions brand, driving
+              innovation across industries and everyday applications.
             </p>
             <p>
               We aim to develop a wide range of high-quality magnets, expand
-              their use across multiple sectors, and strengthen India&rsquo;s
-              position in the global magnetic manufacturing space.
+              their use across multiple sectors, and push the boundaries of the
+              global magnetic manufacturing space.
             </p>
           </div>
         </div>

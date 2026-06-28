@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FavoriteToggle } from "@/components/catalog/favorite-toggle";
 import { cn } from "@/lib/utils";
 import { cloudinaryLoader } from "@/lib/cloudinary/loader";
+import { blurUrl } from "@/lib/cloudinary/transforms";
 import { SHOW_PRICE, formatPaiseToINR } from "@/lib/catalog/format";
 import type { Product } from "@/types/database";
 
@@ -25,6 +26,7 @@ export function ProductCard({
   isFavorite = false,
 }: ProductCardProps) {
   const cover = product.images[0];
+  const blur = cover ? blurUrl(cover) : undefined;
   return (
     <div
       className={cn(
@@ -42,6 +44,8 @@ export function ProductCard({
               fill
               sizes="(min-width: 1024px) 33vw, 50vw"
               priority={priority}
+              placeholder={blur ? "blur" : "empty"}
+              blurDataURL={blur}
               className="object-cover transition duration-500 group-hover:scale-[1.03]"
             />
           ) : (

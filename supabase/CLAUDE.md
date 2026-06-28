@@ -82,7 +82,7 @@ Run order is **strict** — 0004 alters the column type that 0002 created, 0005/
   - **B**: `description`
   - **C**: `category` + `rooms` + `colors` + `patterns` + `styles` (text-cast and space-joined)
 - Indexed via GIN on `search_tsv`
-- Consumed by `listProducts` via `.textSearch("search_tsv", buildFtsQuery(q), { type: "websearch" })` — the `websearch` mode handles boolean operators without us escaping
+- Consumed by `listProducts` via `.textSearch("search_tsv", buildFtsQuery(q))` (no `type` → raw `to_tsquery`). `buildFtsQuery` emits **prefix** lexemes (`ra:*`), so typing "ra" matches "rare" and a single box searches across every weighted field. (Was `{ type: "websearch" }`, which only matched whole words.)
 - **0004 re-fires the trigger** with `update public.products set name = name` — required so existing rows pick up the new dimensions in their tsvector
 
 ## RPC: `get_related_products`

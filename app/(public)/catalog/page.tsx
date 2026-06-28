@@ -4,12 +4,19 @@ import { Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CatalogFilters } from "@/components/catalog/catalog-filters";
-import { CatalogPagination } from "@/components/catalog/catalog-pagination";
 import { CatalogSearch } from "@/components/catalog/catalog-search";
-import { ProductGrid } from "@/components/catalog/product-grid";
-import { getFavoritesForUser, listProducts } from "@/lib/catalog/queries";
+import { LoadMoreProducts } from "@/components/catalog/load-more-products";
+import {
+  getFavoritesForUser,
+  listProducts,
+  type ListProductsResult,
+} from "@/lib/catalog/queries";
 import { getCurrentUser } from "@/lib/auth";
-import { PAGE_SIZE, parseCatalogFilters } from "@/lib/catalog/search";
+import {
+  filtersToSearchString,
+  parseCatalogFilters,
+  type CatalogFilters as CatalogFiltersType,
+} from "@/lib/catalog/search";
 
 export const metadata: Metadata = {
   title: "Catalog — RareOcto",
@@ -24,16 +31,15 @@ type CatalogPageProps = {
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const raw = await searchParams;
   const filters = parseCatalogFilters(raw);
-  const [{ products, total, page, pageCount }, user] = await Promise.all([
-    listProducts(filters),
-    getCurrentUser(),
-  ]);
-  const favoriteIds = user
-    ? new Set((await getFavoritesForUser(user.id)).map((p) => p.id))
-    : new Set<string>();
 
-  const start = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, total);
+  // Kick off the data fetches but DON'T await them here. Passing the promises
+  // into <Suspense> boundaries lets the page shell (header, search, filters)
+  // paint immediately while the product grid streams in behind a skeleton —
+  // the page no longer blocks on the DB query before showing anything. The
+  // same `resultsPromise` is shared by the count + grid, so the query runs once.
+  const resultsPromise = listProducts(filters);
+  const userPromise = getCurrentUser();
+  const streamKey = filtersToSearchString(filters) || "all";
 
   return (
     <main className="mx-auto w-full max-w-7xl px-6 py-6 md:py-8">
@@ -53,14 +59,13 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         <Suspense fallback={<div className="h-11 w-full max-w-md" />}>
           <CatalogSearch />
         </Suspense>
-        <p
-          className="text-sm text-muted-foreground"
-          aria-live="polite"
+        <Suspense
+          fallback={
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          }
         >
-          {total === 0
-            ? "No products yet"
-            : `Showing ${start}–${end} of ${total}`}
-        </p>
+          <ResultCount resultsPromise={resultsPromise} />
+        </Suspense>
       </div>
 
       <div className="mb-8">
@@ -69,19 +74,85 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         </Suspense>
       </div>
 
-      {products.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <>
-          <ProductGrid
-            products={products}
-            isAuthed={Boolean(user)}
-            favoriteIds={favoriteIds}
-          />
-          <CatalogPagination filters={filters} pageCount={pageCount} />
-        </>
-      )}
+      {/* Keyed by the filter signature so it remounts (showing the skeleton
+          again) whenever the search/filters change. */}
+      <Suspense key={streamKey} fallback={<CatalogGridSkeleton />}>
+        <CatalogResults
+          resultsPromise={resultsPromise}
+          userPromise={userPromise}
+          filters={filters}
+        />
+      </Suspense>
     </main>
+  );
+}
+
+async function ResultCount({
+  resultsPromise,
+}: {
+  resultsPromise: Promise<ListProductsResult>;
+}) {
+  const { total } = await resultsPromise;
+  return (
+    <p className="text-sm text-muted-foreground" aria-live="polite">
+      {total === 0
+        ? "No products yet"
+        : `${total} ${total === 1 ? "piece" : "pieces"}`}
+    </p>
+  );
+}
+
+async function CatalogResults({
+  resultsPromise,
+  userPromise,
+  filters,
+}: {
+  resultsPromise: Promise<ListProductsResult>;
+  userPromise: ReturnType<typeof getCurrentUser>;
+  filters: CatalogFiltersType;
+}) {
+  const [{ products, total }, user] = await Promise.all([
+    resultsPromise,
+    userPromise,
+  ]);
+  const favoriteIds = user
+    ? new Set((await getFavoritesForUser(user.id)).map((p) => p.id))
+    : new Set<string>();
+
+  if (products.length === 0) {
+    return <EmptyState />;
+  }
+
+  return (
+    <LoadMoreProducts
+      initialProducts={products}
+      total={total}
+      filters={filters}
+      isAuthed={Boolean(user)}
+      favoriteIds={[...favoriteIds]}
+    />
+  );
+}
+
+function CatalogGridSkeleton() {
+  return (
+    <div
+      className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-3"
+      aria-hidden
+    >
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="overflow-hidden rounded-lg border border-border/60 bg-card"
+        >
+          <div className="aspect-[3/2] w-full animate-pulse bg-muted" />
+          <div className="flex flex-col gap-2 p-2.5 sm:p-3">
+            <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export function Logo({ className }: { className?: string }) {
   return (
     <Image
-      src="/logo.webp"
+      src="/logo-no-background.webp"
       alt="RareOcto"
       width={512}
       height={512}

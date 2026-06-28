@@ -74,6 +74,9 @@ export function CatalogSearch() {
         className={cn(
           "h-11 w-full rounded-full border border-border bg-background pl-10 pr-10 text-sm",
           "placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-coral/40",
+          // Hide the browser's native search clear button — we render our own
+          // <X> below, so without this WebKit/Chromium shows two clear icons.
+          "[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none",
         )}
       />
       {value ? (

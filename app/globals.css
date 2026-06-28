@@ -2,9 +2,18 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Class-based dark mode: `dark:*` utilities must follow the `.dark` class on
+   <html> (set by the inline theme script + nav toggle), NOT the OS-level
+   `prefers-color-scheme` media query. Without this, Tailwind v4 defaults `dark:`
+   to the media query, so on an OS in dark mode every `dark:*` style activates
+   even in light mode — e.g. `dark:bg-ink/40` painting a navy scrim over white
+   sections. The `:where()` form keeps specificity at 0 and is non-recursive. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface-sunken: var(--surface-sunken);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-bricolage);
@@ -63,6 +72,10 @@
 
   --background: var(--cream);
   --foreground: var(--ink);
+
+  /* Slightly darker warm cream — for sunken/recessed section panels that should
+     sit a touch below the page background (e.g. the "how it works" band). */
+  --surface-sunken: oklch(0.94 0.02 85);
 
   --card: oklch(0.99 0.008 240);
   --card-foreground: var(--ink);

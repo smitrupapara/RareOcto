@@ -21,10 +21,11 @@ Consumers live mostly under `app/(public)/catalog/*`.
 - `sortedByLabel(values, labelMap)` — options ordered alphabetically by display label (not enum order). Style/Pattern/Room labels alphabetize in English so users find them
 - `update(patch)` — patches one filter, rebuilds search string via `filtersToSearchString`, calls `router.replace(... , { scroll: false })` inside `useTransition`
 - `clearAll()` removes every `FILTER_KEYS` member (preserves `q`, `sort`)
-- **Lenis interaction gotcha**: the underlying `Select.Popup` and `Select.List` set `data-lenis-prevent` (handled in [[components-ui]]) so wheel events inside the dropdown don't bubble to the page scroll
+- **Dropdown scroll**: the underlying `Select.List` is `overflow-y-auto overscroll-contain` so wheel events inside an open dropdown scroll the list, not the page. (The old `data-lenis-prevent` opt-out was removed along with Lenis — scroll is native now; see [[components-providers]])
 - "Active filter chips" rendered above the controls — clicking a chip clears that single filter
 
 ### catalog-pagination.tsx (server)
+- **No longer wired into `/catalog`** — the catalog page now uses `load-more-products.tsx` (incremental "Load more") instead of numbered pages. Kept as a self-contained, reusable component; safe to delete if no future use emerges.
 - Returns `null` if `pageCount ≤ 1` — never renders for single-page results
 - `buildPageList(current, total)` — always shows first + last + (current, ±1); a single `"..."` ellipsis collapses any gap. Returns an array of `number | "ellipsis"`
 - Hrefs built via `filtersToSearchString(filters, { page: n })` — preserves `q`/sort/filters
@@ -35,6 +36,15 @@ Consumers live mostly under `app/(public)/catalog/*`.
 - Passes `priority={i < 4}` for the **first 4 cards** — they're typically above the fold and need Next/Image LCP optimisation
 - Receives `favoriteIds: Set<string>` from the page so each card knows its own state without a per-card query
 - Receives `isAuthed: boolean` to gate FavoriteToggle's click handler
+- Still used by `account/favorites/page.tsx` (NOT the catalog page — that one uses `load-more-products.tsx`)
+
+### load-more-products.tsx (client)
+- The catalog page's grid + "Load more" button — replaces numbered pagination. Renders the same `grid grid-cols-2 … lg:grid-cols-3` of `<ProductCard>`s as `product-grid.tsx`.
+- Props: `initialProducts` (server-rendered first page), `total`, `filters: CatalogFilters`, `isAuthed`, `favoriteIds: string[]` (the user's FULL favourite set, so newly loaded cards resolve their heart without a refetch)
+- `loadMore()` calls `loadMoreProductsAction(filters, page + 1)` (`app/(public)/catalog/actions.ts`) inside `useTransition`; merges results de-duped by `id`; button shows "Loading…" while pending; `try/catch` surfaces a retry message
+- `hasMore = products.length < total` — button + `"{n} of {total}"` count hide once everything is loaded
+- **Must be `key`-ed by the filter signature** in the page so it remounts (state resets) when search/filters change — it does NOT read `useSearchParams`
+- **Security**: the server action re-validates the client-supplied `filters` by round-tripping `filtersToSearchString` → `parseCatalogFilters` (never trusts raw client input — see [[lib-catalog]])
 
 ### product-card.tsx (client)
 - Cover image (`images[0]`) via `cloudinaryLoader` + `priority` prop forwarded for LCP
@@ -142,7 +152,7 @@ Consumers live mostly under `app/(public)/catalog/*`.
 
 ## Related
 - See [[components-auth]] for `AuthGatedButton` consumed by FavoriteToggle / BuyBox / ReviewForm
-- See [[components-ui]] for `Select`, `Sheet`, `Button` primitives and the Lenis prevent pattern
+- See [[components-ui]] for `Select`, `Sheet`, `Button` primitives
 - See [[lib-catalog]] for `parseCatalogFilters`, `filtersToSearchString`, all enum constant arrays, and the data-access functions consumed here
 - See [[lib-cloudinary]] for `cloudinaryLoader` (`<Image>`) and `og()` (JSON-LD)
 - See [[supabase-migrations]] for the underlying tables / RLS that power these queries

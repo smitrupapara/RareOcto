@@ -212,7 +212,9 @@ export function ProductBuyBox({
             <span className="text-xs text-muted-foreground">Unit</span>
             <Select<DimensionUnit>
               value={unit}
-              onValueChange={(next) => setUnit(next)}
+              onValueChange={(next) => {
+                if (next) setUnit(next);
+              }}
             >
               <SelectTrigger aria-label="Unit" className="w-32">
                 <SelectValue>{UNIT_LABEL[unit]}</SelectValue>

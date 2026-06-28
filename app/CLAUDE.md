@@ -6,14 +6,14 @@
 - `<html>`: applies all three font variables + `h-full`, `suppressHydrationWarning` (Grammarly ext compat)
 - `<head>`: contains a synchronous inline `<script>` that reads `localStorage('theme')` and adds `class="dark"` to `<html>` before first paint — prevents FOUC on dark-mode reload. Falls back to `prefers-color-scheme: dark` if no stored value.
 - `<body>`: `suppressHydrationWarning` — Grammarly injects `data-gr-*` attributes causing hydration mismatch without this
-- Wraps everything in `SmoothScrollProvider` (no ThemeProvider — theme is managed via direct DOM manipulation)
+- Renders `{children}` directly — **no SmoothScrollProvider** (Lenis smooth-scroll was removed; native scroll only — see [[components-providers]]) and no ThemeProvider (theme is managed via direct DOM manipulation)
 - `siteUrl`: `NEXT_PUBLIC_SITE_URL` env var, falls back to `"https://rareocto.com"`
 - OG image: `/og.png` (1200×630), theme colors for light/dark
 
 ## globals.css — Dark mode
 - Dark mode is **class-based**: add `class="dark"` to `<html>` to activate
 - Light vars on `:root`, dark vars on `.dark` — both specificity 0,1,0; `.dark` wins because it comes later
-- No `@custom-variant dark` — do NOT add it; it caused Tailwind PostCSS to hang on compile
+- **`dark:*` utilities are bound to the `.dark` class** via `@custom-variant dark (&:where(.dark, .dark *));` in globals.css (right after the `@import`s). REQUIRED — without it Tailwind v4 defaults `dark:` to the `prefers-color-scheme` media query, so on an OS in dark mode every `dark:*` style activates even in light mode (e.g. `dark:bg-ink/40` painting a navy scrim over white sections). Use the `:where()` form (specificity 0, non-recursive); a malformed variant selector — not this one — was what previously hung the compile.
 - Color palette: navy/blue brand theme — `--ink` (navy), `--cream` (off-white), `--coral` (brand blue CTA), `--marigold` (steel-sky blue), `--sea` (deep navy)
 
 ## (public)/layout.tsx
@@ -28,11 +28,12 @@
 
 ## (public)/catalog/page.tsx — Catalog (`/catalog`)
 - Server component; `searchParams: Promise<...>` (Next 16) parsed via `parseCatalogFilters` (`lib/catalog/search.ts`)
-- Data via `listProducts(filters)` (`lib/catalog/queries.ts`) — returns `{ products, total, page, pageSize, pageCount }`
-- Also fetches the current user (parallel) and, if authed, resolves `favoriteIds` via `getFavoritesForUser` so the grid hearts render in their saved state
-- Layout: header (eyebrow + h1 + tagline) → search + result count row → filter row → grid → pagination
-- Renders `<EmptyState />` instead of grid+pagination when `products.length === 0` (deep-links to `/catalog` to clear)
-- Children: `CatalogSearch` (client, debounced 280ms, `router.replace`), `CatalogFilters` (client, URL-syncing selects + Clear all), `ProductGrid` (server, takes `isAuthed` + `favoriteIds`), `CatalogPagination` (server, builds hrefs via `filtersToSearchString`)
+- Data via `listProducts(filters)` (`lib/catalog/queries.ts`) — page only uses `{ products, total }` (the first page); further pages load client-side
+- Also fetches the current user (parallel) and, if authed, resolves `favoriteIds` (the user's FULL favourite set) via `getFavoritesForUser` so every card — including later-loaded ones — renders its saved heart state
+- Layout: header (eyebrow + h1 + tagline) → search + result count (`"N pieces"`) row → filter row → `LoadMoreProducts`
+- Renders `<EmptyState />` instead of the grid when `products.length === 0` (deep-links to `/catalog` to clear)
+- **Load more, not pagination**: `<LoadMoreProducts>` (client) renders the grid and appends pages via the `loadMoreProductsAction` server action (`app/(public)/catalog/actions.ts`) on a "Load more" button. It's `key`-ed by `filtersToSearchString(filters)` so it remounts/resets when filters change. `CatalogPagination` still exists but is no longer wired here.
+- Children: `CatalogSearch` (client, debounced 280ms, `router.replace`), `CatalogFilters` (client, URL-syncing selects + Clear all), `LoadMoreProducts` (client, takes `initialProducts`/`total`/`filters`/`isAuthed`/`favoriteIds`)
 - Search/filter components are wrapped in `<Suspense>` because they call `useSearchParams()` — required for static prerender
 
 ## (public)/catalog/[slug]/page.tsx — Product detail

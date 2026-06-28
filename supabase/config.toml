@@ -1,0 +1,10 @@
+project_id = "hlkxrowzmzquwrxjelfj"
+
+# The Supabase "Send SMS Hook" authenticates to this function with the
+# standardwebhooks HMAC signature (SEND_SMS_HOOK_SECRET) — NOT a Supabase JWT.
+# JWT verification must stay OFF, or Supabase Auth's hook call is rejected before
+# our code runs with: "Hook requires authorization token".
+# Declaring it here makes the setting survive every `supabase functions deploy`
+# (a bare deploy otherwise re-enables verify_jwt and breaks OTP delivery).
+[functions.send-whatsapp-otp]
+verify_jwt = false

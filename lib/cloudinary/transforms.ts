@@ -48,3 +48,17 @@ export function og(publicId: string): string {
 export function lqip(publicId: string): string {
   return build("c_fill,w_24,e_blur:1000,q_auto,f_auto", publicId);
 }
+
+/**
+ * Blur placeholder URL for `<Image placeholder="blur" blurDataURL={...}>`.
+ *
+ * Unlike the helpers above, this NEVER throws: if the cloud name is unset
+ * (dev/local without Cloudinary), it returns `undefined` so callers can simply
+ * omit the placeholder rather than crash the render. The returned URL is a
+ * ~24px, heavily-blurred, tiny image (a few hundred bytes) that Next renders as
+ * the card background until the full image finishes loading.
+ */
+export function blurUrl(publicId: string): string | undefined {
+  if (!cloudName) return undefined;
+  return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_24,e_blur:1000,q_auto,f_auto/${clean(publicId)}`;
+}

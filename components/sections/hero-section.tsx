@@ -124,7 +124,11 @@ export function HeroSection() {
                   data-hero-word
                   className={
                     i === 1
-                      ? "inline-block bg-gradient-to-br from-coral via-marigold to-coral bg-clip-text text-transparent"
+                      ? // pr-[0.12em] extends the background box past the trailing
+                        // period — negative letter-spacing shrinks the glyph's
+                        // advance, and with bg-clip-text the part of the "." outside
+                        // the box gets no gradient (renders transparent/clipped).
+                        "inline-block pr-[0.12em] bg-gradient-to-br from-coral via-marigold to-coral bg-clip-text text-transparent"
                       : "inline-block"
                   }
                 >

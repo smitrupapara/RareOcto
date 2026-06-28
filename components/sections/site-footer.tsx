@@ -19,7 +19,7 @@ export function SiteFooter() {
               Magnetic wallpapers that swap in seconds. Bold designs for bold walls — no nails, no glue, no regrets.
             </p>
             <p className="mt-5 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              Made in India · Shipped worldwide
+              Shipped worldwide
             </p>
           </div>
 
@@ -81,7 +81,7 @@ export function SiteFooter() {
 
         <div className="mt-14 flex flex-col gap-4 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} RareOcto Magnets Pvt. Ltd. All rights reserved.</p>
-          <p className="font-mono tracking-wide">GST Reg. · Made in India</p>
+          <p className="font-mono tracking-wide">GST Reg.</p>
         </div>
       </div>
     </footer>

@@ -19,11 +19,11 @@ Three modules: `queries.ts` (data access), `search.ts` (URL ↔ filter ↔ searc
 - Numeric `min` / `max` parsed with `parseInteger` (rejects negatives, NaN)
 
 ### `buildFtsQuery(q)` → string | null
-- Sanitizes a free-text query for Postgres `websearch_to_tsquery`
-- Strips control chars (`\x00-\x1f`) and `<>"'`
-- Collapses whitespace, trims
-- Returns `null` if the result is empty — caller MUST check before passing to `.textSearch`
-- We rely on `websearch` mode so we don't have to escape boolean operators ourselves
+- Builds a **prefix** `to_tsquery` string from free-text input: splits on non-alphanumerics, lowercases, and appends `:*` to each token, AND-ed together (`"blue floral"` → `"blue:* & floral:*"`)
+- The `:*` prefix operator is the whole point — it makes "ra" match "rare", "living" match "living-room". `websearch_to_tsquery` (the old mode) only matched whole stemmed words
+- Stripping to alphanumerics also sanitizes: the user can't inject `&`/`|`/`!`/`:` tsquery operators
+- Returns `null` if no usable tokens — caller MUST check before passing to `.textSearch`
+- **Caller uses `.textSearch("search_tsv", q)` with NO `type` option** — that selects raw `to_tsquery`, which honors `:*`. Passing `{ type: "websearch" }` would strip the prefix operators
 
 ### `filtersToSearchString(filters, overrides?)` → string
 - Round-trips a `CatalogFilters` back to a URL search string (`?cat=...&page=2`)
@@ -37,7 +37,7 @@ All exports are `async`, all gate behind `createSupabaseServerClient()`. Top of 
 ### `listProducts(filters)` → `ListProductsResult`
 - Drives `/catalog`
 - Applies all enum filters via `.contains("col", [value])` (works because `listProducts` runs server-side and PostgREST's enum-array inference happens to succeed for `contains` here — see RPC workaround note below)
-- FTS via `.textSearch("search_tsv", buildFtsQuery(q), { type: "websearch" })` — only if `buildFtsQuery` returns non-null
+- FTS via `.textSearch("search_tsv", buildFtsQuery(q))` (raw `to_tsquery`, prefix-enabled) — only if `buildFtsQuery` returns non-null
 - Sort cases: `price_asc`, `price_desc`, `relevance` (textSearch order — Postgres ts_rank), `new` (default — `created_at desc`)
 - Pagination via `.range(offset, offset + PAGE_SIZE - 1)`. `count: "exact"` so the response includes total count
 
@@ -103,7 +103,7 @@ All exports are `async`, all gate behind `createSupabaseServerClient()`. Top of 
 ## Gotchas
 - **Prices are stored as paise (integer)** — never `Decimal`, never `float`. Multiply by 100 on input, divide on display
 - **The `listProducts.contains` calls work** even though `getRelatedProducts` has to use the RPC — they apparently land in a different PostgREST codepath that gets the type inference right. If `listProducts` ever starts failing with `operator does not exist`, port it to an RPC the same way
-- **`buildFtsQuery` returning null is a sentinel** — callers must skip `.textSearch` entirely when null. Passing an empty string to `websearch_to_tsquery` matches everything
+- **`buildFtsQuery` returning null is a sentinel** — callers must skip `.textSearch` entirely when null. Passing an empty string to `to_tsquery` errors / matches nothing
 - **`PAGE_SIZE` change** propagates to `range()` AND pageCount math. Update both via the constant; don't introduce a parallel constant in components
 
 ## Related

@@ -31,7 +31,10 @@ export async function listProducts(filters: CatalogFilters): Promise<ListProduct
 
   const ftsQuery = buildFtsQuery(filters.q);
   if (ftsQuery) {
-    query = query.textSearch("search_tsv", ftsQuery, { type: "websearch" });
+    // No `type` → Supabase uses raw `to_tsquery`, which honors the `:*` prefix
+    // operators that buildFtsQuery emits (websearch mode would strip them and
+    // only match whole words, so "ra" would never match "rare").
+    query = query.textSearch("search_tsv", ftsQuery);
   }
 
   if (filters.category) {

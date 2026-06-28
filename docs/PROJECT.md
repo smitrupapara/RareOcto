@@ -31,7 +31,7 @@ Strategic stack with the *why* behind each pick. Status reflects whether it's wi
 
 ### Animation
 - **GSAP 3.15 + ScrollTrigger** ✅ — Frame-by-frame scroll control, perfect for the planned octopus scroll narrative and the pinned-horizontal How-It-Works section. The gold-standard for Awwwards-style sites.
-- **Lenis 1.3** ✅ — Buttery smooth scroll that makes the site feel premium. Wrapped in `components/providers/smooth-scroll-provider.tsx`. *Gap: Lenis ↔ ScrollTrigger sync not wired yet.*
+- **Native scroll** — smooth-scroll (Lenis) was removed; the site uses plain native browser scrolling. Lenis caused stuck-midway, a down-then-up reversal lock, and a section scroll-trap (see `components/providers/CLAUDE.md`). GSAP/ScrollTrigger run on native scroll directly.
 - **Framer Motion 12** ✅ — Available for component-level micro-interactions; GSAP handles narrative/scroll work.
 
 ### Backend, data, auth
@@ -102,7 +102,7 @@ Notes: GSAP entrance timeline + continuous animations; respects `prefers-reduced
 ### How It Works · ✅
 Purpose: Educate visitor on the 4-step install flow (Prepare → Install base sheet → Apply design → Replace anytime), then list 4 benefits (no wall damage / zero residue / reusable base / no tools).
 Files: `components/sections/how-it-works.tsx`
-Notes: Horizontal pinned-scroll via GSAP ScrollTrigger. Lenis ↔ ScrollTrigger sync is **not** wired — fine on desktop, may feel mismatched on touch.
+Notes: User-driven horizontal slider (snap-scrolling track + prev/next buttons + wheel-to-horizontal), GSAP for entrance reveals only. Native page scroll; the track hands off to the page at its horizontal edges.
 
 ### Our Vision · ✅
 Purpose: "Built in India. Built for the world." — positioning statement on becoming the leading Made-in-India magnetic solutions brand.
@@ -248,8 +248,8 @@ Out-of-scope from initial auth shipment. Tracked in [`docs/auth-setup.md`](./aut
 Configured in [`next.config.ts`](../next.config.ts): Cloudinary, Unsplash, Supabase storage buckets. Formats: AVIF + WebP.
 
 ### Animation stack
-- `components/providers/smooth-scroll-provider.tsx` — Lenis RAF loop, exposes `window.__lenis` for programmatic `scrollTo`
-- GSAP + ScrollTrigger transpiled via `next.config.ts` `transpilePackages`
+- Native browser scrolling (Lenis smooth-scroll removed — see `components/providers/CLAUDE.md`)
+- GSAP + ScrollTrigger transpiled via `next.config.ts` `transpilePackages` (run on native scroll)
 - `components/providers/theme-provider.tsx` exists but is **not** wrapped into `app/layout.tsx`
 
 ### Dark mode
@@ -267,7 +267,6 @@ Target: **Vercel** (Next.js host) + **Supabase** (DB + auth + edge functions). N
 - `theme-provider.tsx` exists but is not mounted in any layout
 - `components/ui/navigation-menu.tsx` imported nowhere
 - `lib/cloudinary/loader.ts` scaffolded but no `<Image loader={...}>` usage
-- Lenis ↔ GSAP ScrollTrigger not bridged (`lenis.on('scroll', ScrollTrigger.update)` missing)
 - Supabase types are hand-written; not generated via `supabase gen types typescript`
 - No CI, no tests (unit or E2E)
 - `app/CLAUDE.md` says `/` renders only Hero + HowItWorks — actual page renders 4 sections. Keep CLAUDE.md in sync as sections change.

@@ -11,6 +11,7 @@ import { RelatedProducts } from "@/components/catalog/related-products";
 import { ReviewForm } from "@/components/catalog/review-form";
 import { ReviewList } from "@/components/catalog/review-list";
 import { ReviewSummary } from "@/components/catalog/review-summary";
+import { ShareButton } from "@/components/catalog/share-button";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getProductBySlug,
@@ -112,6 +113,12 @@ export default async function ProductDetailPage({ params }: RouteProps) {
               productId={product.id}
               isAuthed={isAuthed}
               initialIsFavorite={initialIsFavorite}
+              showLabel
+            />
+            <ShareButton
+              url={`${SITE_URL}/catalog/${product.slug}`}
+              title={`${product.name} — RareOcto`}
+              text={product.meta_description ?? product.description.slice(0, 160)}
               showLabel
             />
           </div>

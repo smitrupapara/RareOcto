@@ -44,10 +44,15 @@ function SheetClose({
   ...props
 }: SheetPrimitive.Close.Props & AsChildProp) {
   const split = pickRenderChild(asChild, children)
+  // When `asChild` renders a real <button>, Base UI must keep native button
+  // semantics (nativeButton=true); when it renders a non-button (e.g. a Link/<a>),
+  // it must be false. Deriving this from the child avoids the mismatch warning.
+  const isNativeButtonChild =
+    React.isValidElement(children) && children.type === "button"
   return (
     <SheetPrimitive.Close
       data-slot="sheet-close"
-      nativeButton={asChild ? false : undefined}
+      nativeButton={asChild ? isNativeButtonChild : undefined}
       {...split}
       {...props}
     />

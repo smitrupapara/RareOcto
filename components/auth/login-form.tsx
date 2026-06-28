@@ -40,6 +40,19 @@ export function LoginForm() {
   const phoneForm = useForm<PhoneValues>({ resolver: zodResolver(phoneSchema) });
   const otpForm = useForm<OtpValues>({ resolver: zodResolver(otpSchema) });
 
+  const phoneField = phoneForm.register("digits");
+  const otpField = otpForm.register("token");
+
+  // Strip anything that isn't a digit before react-hook-form reads the value,
+  // so typing/pasting letters or symbols never lands in these fields.
+  function digitsOnly(
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: { onChange: (e: React.ChangeEvent<HTMLInputElement>) => void },
+  ) {
+    e.target.value = e.target.value.replace(/\D/g, "");
+    field.onChange(e);
+  }
+
   useEffect(() => {
     if (countdown <= 0) return;
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
@@ -116,12 +129,13 @@ export function LoginForm() {
                 +91
               </span>
               <input
-                {...phoneForm.register("digits")}
+                {...phoneField}
+                onChange={(e) => digitsOnly(e, phoneField)}
                 type="tel"
                 inputMode="numeric"
                 maxLength={10}
                 placeholder="98765 43210"
-                className="flex-1 bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                className="flex-1 bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"
               />
             </div>
             {phoneForm.formState.errors.digits && (
@@ -141,13 +155,14 @@ export function LoginForm() {
         <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)} className="space-y-4">
           <div>
             <input
-              {...otpForm.register("token")}
+              {...otpField}
+              onChange={(e) => digitsOnly(e, otpField)}
               type="text"
               inputMode="numeric"
               maxLength={6}
               placeholder="123456"
               autoFocus
-              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-center font-mono text-2xl tracking-[0.5em] text-foreground placeholder:tracking-normal placeholder:text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-center font-mono text-2xl tracking-[0.5em] text-foreground placeholder:tracking-normal placeholder:text-muted-foreground/50 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
             {otpForm.formState.errors.token && (
               <p className="mt-1.5 text-xs text-destructive">

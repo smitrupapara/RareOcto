@@ -1,20 +1,29 @@
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
-export async function getCurrentUser() {
+// Request-level memoization (React `cache`) guarantees a single
+// `supabase.auth.getUser()` per request render. Without this, the public
+// layout (getCurrentProfile + getCurrentUser) and each page (getCurrentUser)
+// fire multiple *concurrent* getUser() calls. When the access token is expired
+// they all try to refresh with the same refresh token; @supabase/ssr rotates
+// it, so the first call consumes it and the others refresh against a consumed
+// token and return null — making an authenticated user look signed-out
+// (broken add-to-cart / review). One shared call removes that race entirely.
+export const getCurrentUser = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user;
-}
+});
 
-export async function getCurrentProfile() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export const getCurrentProfile = cache(async () => {
+  const user = await getCurrentUser();
   if (!user) return null;
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
   return data;
-}
+});
 
 export async function requireUser() {
   const user = await getCurrentUser();

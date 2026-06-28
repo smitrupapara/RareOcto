@@ -7,7 +7,7 @@
 //   Name     : MSG91_TEMPLATE_NAME (e.g. rareocto_login_otp; lowercase + "_" only)
 //   Category : Authentication      <-- NOT Marketing/Utility. This is the #1 cause
 //                                       of rejection. OTP templates MUST be this.
-//   Language : en_US               <-- must EXACTLY match `language.code` below
+//   Language : en               <-- must EXACTLY match `language.code` below
 //   Body     : "{{1}} is your verification code."  (Meta-fixed, one variable)
 //   Add-ons  : enable "security disclaimer" + "code expires in 10 minutes"
 //   Button   : "Copy code" (OTP/URL button) — the OTP is sent in BOTH body_1
@@ -60,8 +60,8 @@ Deno.serve(async (req) => {
           type: "template",
           template: {
             name: Deno.env.get("MSG91_TEMPLATE_NAME"),
-            // Must match the approved template's language exactly (en_US).
-            language: { code: "en_US", policy: "deterministic" },
+            // Must match the approved template's language exactly (en).
+            language: { code: "en", policy: "deterministic" },
             namespace: Deno.env.get("MSG91_TEMPLATE_NAMESPACE"),
             to_and_components: [{
               to: [user.phone],

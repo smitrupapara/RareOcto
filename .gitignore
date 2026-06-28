@@ -47,5 +47,11 @@ supabase/.branches/
 # local product images (uploaded to Cloudinary, not stored in repo)
 /images/
 
+# product source images & spreadsheet (uploaded to Cloudinary, not stored in repo)
+/Product_list/
+
+# filled product seed data (used locally by scripts/seed-products.ts)
+/scripts/products.csv
+
 # claude code local settings
 .claude/settings.local.json

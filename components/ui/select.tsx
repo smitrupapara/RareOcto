@@ -67,7 +67,6 @@ function SelectContent({
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
-          data-lenis-prevent
           className={cn(
             "z-50 min-w-(--anchor-width) origin-(--transform-origin) rounded-2xl border border-border bg-popover p-1.5 text-popover-foreground shadow-xl ring-1 ring-foreground/5 outline-none",
             "data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
@@ -78,7 +77,6 @@ function SelectContent({
           {...props}
         >
           <SelectPrimitive.List
-            data-lenis-prevent
             className="max-h-80 overflow-y-auto overscroll-contain"
             style={{ touchAction: "pan-y" }}
           >

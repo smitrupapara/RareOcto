@@ -123,7 +123,7 @@ export default async function OGImage({ params }: RouteProps) {
             }}
           >
             <img
-              src={`${SITE_URL}/logo.webp`}
+              src={`${SITE_URL}/logo-no-background.webp`}
               style={{ width: "40px", height: "40px", borderRadius: "8px" }}
             />
             <span

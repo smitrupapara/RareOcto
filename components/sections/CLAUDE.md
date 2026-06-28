@@ -25,18 +25,18 @@
 
 ## how-it-works.tsx
 - **Export**: `HowItWorks()` — client component
-- **Layout**: full-screen **horizontal pinned scroll** — section is pinned by GSAP while `<ol>` slides left; each step occupies `100vw`
-- **Refs**: `sectionRef` (pinned section), `trackRef` (`<ol>` element that translates)
-- **State**: `activeStep: number` — updated by ScrollTrigger `onUpdate` for progress dots
-- **GSAP**: `gsap.to(track, { x: -(scrollWidth - innerWidth), scrollTrigger: { pin: true, scrub: 1, invalidateOnRefresh: true } })`
-- **Track width**: `style={{ width: \`${STEPS.length * 100}vw\` }}` — set inline; each `<li>` is `w-screen flex-shrink-0`
-- **Section layout**: `h-screen flex flex-col overflow-hidden isolate`; `<ol>` is `flex min-h-0 flex-1 will-change-transform`
-- **Progress dots**: coral pill `w-8` for active step, `w-1.5 bg-foreground/20` for inactive; inline `style` for `var(--coral)` (not Tailwind class — avoids purge)
-- **Benefits row**: placed OUTSIDE the pinned `<section>`, in the outer `<div id="how-it-works">` wrapper — renders after the pin releases
-- **Watermark**: static (no scroll animation), positioned absolute inside section
-- **Step type**: no `align` field (removed — not needed for horizontal layout)
-- **3 steps**: "Mount the base", "Snap the art", "Swap the vibe"
-- **SVG illustrations**: `PrimerArt`, `SnapArt`, `SwapArt` — inline private components, OKLCH token colors
+- **Layout**: a **user-driven horizontal slider** (NOT pinned/forced scroll) — `<ol>` is a `snap-x snap-mandatory overflow-x-auto` track; each `<li>` is `w-full shrink-0 snap-center`. The page scrolls normally; this section never traps the user.
+- **Refs**: `sectionRef`, `headlineRef`, `trackRef` (the scrollable `<ol>`), `benefitsRef`
+- **State**: `active: number` — current step, derived in `handleScroll` from `Math.round(scrollLeft / clientWidth)`
+- **Navigation**: prev/next `ChevronLeft`/`ChevronRight` buttons (absolute, flank the track, `disabled` at the ends) + clickable progress dots; both call `goTo(i)` → `track.scrollTo({ left: i * clientWidth, behavior: "smooth" })`
+- **No vertical-wheel hijack**: we deliberately do NOT map `deltaY → scrollLeft`. That conversion is a scroll trap — on any middle/last step a vertical scroll just walks the slider sideways instead of moving the page, so scrolling up "does nothing" until you reverse through every step. Horizontal nav is arrows + dots + touch-drag + native sideways/trackpad scroll (`deltaX` on `overflow-x-auto`, no JS). Vertical page scroll is never intercepted. (Lenis already removed, scroll is native; see [[components-providers]])
+- **Resize**: re-aligns `scrollLeft` to `active * clientWidth` on viewport resize
+- **GSAP**: entrance reveals ONLY (headline + benefits stagger, `once: true`) — the pinned/scrubbed ScrollTrigger was removed (it fought Lenis and caused the down-then-up scroll lock)
+- **Custom images**: each step has an `image: "/how-it-works/step-N.webp"` field. `StepArt` layers a plain `<img>` (eslint-disabled `no-img-element` — intentional, user-managed asset) over the inline SVG fallback; the image fades in only on `onLoad`, and `onError` removes it, so a missing/not-yet-added file simply shows the SVG with no broken-image flash
+- **Progress dots**: coral pill `w-8` for active step, `w-2.5 bg-foreground/20` for inactive; inline `style` for `var(--coral)` (not a Tailwind class — avoids purge)
+- **Benefits row**: still OUTSIDE the `<section>`, in the outer `<div id="how-it-works">` wrapper
+- **4 steps**: "Prepare the surface.", "Install the base sheet.", "Apply your design.", "Replace anytime."
+- **SVG illustrations**: `PrepArt`, `BaseArt`, `PlaceArt`, `ReplaceArt` — inline private components, CSS-var token colors (`--coral`, `--marigold`, `--sea`, `--ink`, `--cream`)
 
 ## site-nav.tsx
 - **Export**: `SiteNav()` — client component
@@ -54,7 +54,7 @@
 
 ## site-footer.tsx
 - **Export**: `SiteFooter()` — server component (no "use client")
-- **Layout**: 2-col grid — brand block (Logo + tagline + "Made in India") + 3-col link groups
+- **Layout**: 2-col grid — brand block (Logo + tagline + "Shipped worldwide") + 3-col link groups
 - **Link groups**: Shop (`/catalog`, `/try-on`, `/catalog?gift=1`), RareOcto (`/about`, `/about#materials`, `/about#contact`), Help (`/about#shipping`, `/about#returns`, `/about#faq`)
 - **Coral accent**: 1px gradient line at top border (`via-coral/60`)
 - **Legal strip**: copyright (dynamic year) + Privacy/Terms/Shipping links

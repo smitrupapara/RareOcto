@@ -7,13 +7,20 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cloudinaryLoader } from "@/lib/cloudinary/loader";
-import { SHOW_PRICE, formatDimensions, formatPaiseToINR } from "@/lib/catalog/format";
+import { blurUrl } from "@/lib/cloudinary/transforms";
+import {
+  SHOW_PRICE,
+  formatDimensions,
+  formatPaiseToINR,
+  toSqFt,
+} from "@/lib/catalog/format";
 import {
   removeFromCartAction,
   updateCartQuantityAction,
 } from "@/app/(public)/cart/actions";
 import type {
   CartItem,
+  Category,
   Product,
   ProductMaterial,
 } from "@/types/database";
@@ -23,6 +30,17 @@ const MATERIAL_LABEL: Record<ProductMaterial, string> = {
   "glossy-vinyl": "Glossy vinyl",
   "fabric-texture": "Fabric texture",
   "magnetic-base": "Magnetic base",
+};
+
+const CATEGORY_LABEL: Record<Category, string> = {
+  abstract: "Abstract",
+  botanical: "Botanical",
+  geometric: "Geometric",
+  mural: "Mural",
+  kids: "Kids",
+  minimal: "Minimal",
+  "3d": "3D",
+  illustration: "Illustration",
 };
 
 const MAX_QTY = 5;
@@ -42,6 +60,9 @@ export function CartLineItem({
 }: CartLineItemProps) {
   const [isPending, startTransition] = useTransition();
   const cover = product.images[0];
+  const blur = cover ? blurUrl(cover) : undefined;
+  const category = product.category[0];
+  const areaSqFt = toSqFt(item.width, item.height, item.unit);
 
   function setQty(next: number) {
     const clamped = Math.min(MAX_QTY, Math.max(1, next));
@@ -61,7 +82,7 @@ export function CartLineItem({
     <li className="flex gap-4 py-6">
       <Link
         href={`/catalog/${product.slug}`}
-        className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-border bg-muted sm:h-32 sm:w-28"
+        className="relative aspect-[3/2] w-28 flex-shrink-0 overflow-hidden rounded-xl border border-border bg-muted sm:w-36"
       >
         {cover ? (
           <Image
@@ -69,7 +90,9 @@ export function CartLineItem({
             src={cover}
             alt={product.name}
             fill
-            sizes="120px"
+            sizes="(min-width: 640px) 144px, 112px"
+            placeholder={blur ? "blur" : "empty"}
+            blurDataURL={blur}
             className="object-cover"
           />
         ) : null}
@@ -78,6 +101,11 @@ export function CartLineItem({
       <div className="flex flex-1 flex-col">
         <div className="flex items-start justify-between gap-3">
           <div>
+            {category ? (
+              <p className="text-[0.65rem] font-medium uppercase tracking-widest text-muted-foreground">
+                {CATEGORY_LABEL[category]}
+              </p>
+            ) : null}
             <Link
               href={`/catalog/${product.slug}`}
               className="font-display text-base font-semibold tracking-tight hover:text-coral"
@@ -85,7 +113,10 @@ export function CartLineItem({
               {product.name}
             </Link>
             <p className="mt-1 text-xs text-muted-foreground">
-              {formatDimensions(item.width, item.height, item.unit)} · {MATERIAL_LABEL[item.material]}
+              {formatDimensions(item.width, item.height, item.unit)} · {areaSqFt.toFixed(1)} sq ft
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {MATERIAL_LABEL[item.material]}
             </p>
             {SHOW_PRICE ? (
               <p className="mt-1 text-xs text-muted-foreground">

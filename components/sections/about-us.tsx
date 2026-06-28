@@ -1,4 +1,5 @@
 import Image from "next/image";
+import yashPortrait from "@/public/Yash.webp";
 
 export function AboutUs() {
   return (
@@ -21,7 +22,7 @@ export function AboutUs() {
           <div className="flex flex-col items-center lg:items-start gap-4">
             <div className="relative w-48 lg:w-full aspect-[3/4] overflow-hidden rounded-2xl">
               <Image
-                src="/Yash.webp"
+                src={yashPortrait}
                 fill
                 className="object-cover object-top"
                 alt="Yash Bhanderi"
@@ -82,7 +83,7 @@ export function AboutUs() {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Today, RareOcto is focused on building practical and innovative
                 magnetic solutions that make spaces easier to change—while
-                moving toward becoming a strong Made in India brand in the
+                moving toward becoming a strong brand in the
                 future.
               </p>
             </div>

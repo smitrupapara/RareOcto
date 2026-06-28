@@ -29,6 +29,7 @@ import type { NavLink } from "@/types";
 import type { Profile } from "@/types/database";
 
 const NAV_LINKS: NavLink[] = [
+  { href: "/", label: "Home" },
   { href: "/catalog", label: "Catalog" },
 ];
 
@@ -48,12 +49,7 @@ export function SiteNav({
 
   function scrollToAbout() {
     if (pathname === "/") {
-      const lenis = (window as { __lenis?: { scrollTo: (target: string) => void } }).__lenis;
-      if (lenis) {
-        lenis.scrollTo("#about-us");
-      } else {
-        document.getElementById("about-us")?.scrollIntoView({ behavior: "smooth" });
-      }
+      document.getElementById("about-us")?.scrollIntoView({ behavior: "smooth" });
     } else {
       router.push("/#about-us");
     }

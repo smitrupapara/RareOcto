@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
-import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +30,7 @@ export const metadata: Metadata = {
     template: "%s · RareOcto",
   },
   description:
-    "Premium peel-and-stick magnetic wallpapers. Swap art on your wall in seconds — no glue, no damage. Designed in India, shipped worldwide.",
+    "Premium peel-and-stick magnetic wallpapers. Swap art on your wall in seconds — no glue, no damage. Shipped worldwide.",
   keywords: [
     "magnetic wallpaper",
     "peel and stick wallpaper",
@@ -57,7 +56,8 @@ export const metadata: Metadata = {
     images: ["/og.png"],
   },
   robots: { index: true, follow: true },
-  icons: { icon: "/favicon.ico" },
+  // Icons are provided by the app/ file conventions:
+  // app/favicon.ico, app/icon.png, app/apple-icon.png (all generated from logo-no-background.webp)
 };
 
 export const viewport: Viewport = {
@@ -81,12 +81,12 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})();`,
+            __html: `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();`,
           }}
         />
       </head>
       <body className="min-h-full bg-background text-foreground antialiased" suppressHydrationWarning>
-        <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        {children}
       </body>
     </html>
   );
